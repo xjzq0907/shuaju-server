@@ -1,7 +1,10 @@
 # Shuaju 刷剧 · Server
 
 自托管短剧库管理系统：网盘资源搜索 → 夸克转存 → 本地下载 → 刮削入库 → 网页 / App 在线播放。
-FastAPI + SQLite，前端为无构建 SPA + PWA，同时为 [Shuaju Android App](https://github.com/xjzq0907/shuaju-app) 提供 HTTP API。
+FastAPI + SQLite，前端为无构建 SPA + PWA，同时为 Android 客户端提供 HTTP API。
+
+> **开源协议 AGPL-3.0**：自部署自由，但修改后对外提供网络服务须开源衍生作品。
+> Android 客户端为闭源应用，二进制在 [shuaju-releases](https://github.com/xjzq0907/shuaju-releases) 下载。
 
 ## 功能
 
@@ -111,4 +114,8 @@ GIT_REV=$(git rev-parse --short HEAD) docker compose up -d --build   # GIT_REV �
 
 ## 相关
 
-- [shuaju-app](https://github.com/xjzq0907/shuaju-app) — Android 客户端
+- [shuaju-releases](https://github.com/xjzq0907/shuaju-releases) — Android 客户端下载（闭源二进制 Release）
+
+## 许可
+
+[AGPL-3.0](./LICENSE) © Shuaju
