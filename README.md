@@ -11,9 +11,10 @@ FastAPI + SQLite，前端为无构建 SPA + PWA，同时为 [Shuaju Android App]
 - **PWA 手机端**（`/w`）：继续观看横滑区、筛选、无限滚动；播放器支持长按 2 倍速、双击快进退、上下滑切集、断点续播
 - **发现流**：`/api/dramas/random` 随机刷剧（剧名归一化去重，同剧变体只出一部），`/similar` 连季推荐
 - **收藏 / 拉黑**：拉黑可只删记录保留文件，链接进黑名单后同步不会复活
-- **自动裁边**：扫描后后台异步分析相邻集重叠（16x16 灰度帧指纹比对，约 5 秒/边界），
-  自动写入 skip_head/skip_tail（0~30s）；用户按剧开关（trim_enabled），App 内不手填秒数。
-  手动重检：`POST /api/dramas/{id}/trim/detect`
+- **自动裁边**：扫描后后台异步分析相邻集重叠——音频 RMS 包络对齐（1kHz/50ms 帧，
+  尖峰+谷宽双检验防误报），每剧抽样首/中/尾 3 个边界取中位数，**普通剧 1~3 秒出结果**
+  （大码率文件受磁盘 I/O 限制略慢）；自动写入 skip_head/skip_tail（0~30s）。
+  用户按剧开关（trim_enabled），App 内不手填秒数。手动重检：`POST /api/dramas/{id}/trim/detect`
 
 ## 工作流程
 
