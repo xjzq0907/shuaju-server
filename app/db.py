@@ -76,6 +76,11 @@ def init_db():
             conn.execute(
                 "ALTER TABLE dramas ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0"
             )
+        # 老库迁移：按剧裁边（片头跳过/片尾提前秒数，0=不裁）
+        if "skip_head" not in cols:
+            conn.execute("ALTER TABLE dramas ADD COLUMN skip_head INTEGER NOT NULL DEFAULT 0")
+        if "skip_tail" not in cols:
+            conn.execute("ALTER TABLE dramas ADD COLUMN skip_tail INTEGER NOT NULL DEFAULT 0")
 
 
 @contextmanager

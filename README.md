@@ -78,7 +78,7 @@ GIT_REV=$(git rev-parse --short HEAD) docker compose up -d --build   # GIT_REV �
 | GET | `/api/dramas/random?n=&seed=&offset=` | 发现流：seed+offset 确定性洗牌分页（同 seed 同序列），未看加权靠前，剧名归一化去重；不带 seed 时兼容旧版 `exclude=`（截断 300 防 URL 膨胀）。响应带 `pool`/`offset`/`exhausted`，exhausted=true 换新 seed 重开一轮即可无缝循环 |
 | GET | `/api/dramas/{id}` | 剧详情（集列表、观看进度） |
 | GET | `/api/dramas/{id}/similar` | 连季推荐（剧名归一化前缀匹配） |
-| PATCH | `/api/dramas/{id}` | 更新收藏 / 观看进度 |
+| PATCH | `/api/dramas/{id}` | 更新收藏 / 观看进度 / 裁边（`skip_head`/`skip_tail` 片头跳过与片尾提前秒数，0~30，解决相邻集片源重叠） |
 | GET | `/api/dramas/{id}/episodes/{ep}?q=&t=` | 播放流：`q` 空 = 原画 Range 流；`720p`/`480p` = 实时转码，`t` = 起点秒 |
 | GET | `/api/dramas/{id}/episodes/{ep}/meta` | 单集元信息（含真实时长 `duration`） |
 | GET | `/api/dramas/{id}/cover` | 封面 |

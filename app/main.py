@@ -262,6 +262,8 @@ class WatchPatch(BaseModel):
     watch_state: str | None = None
     last_episode: int | None = None
     favorite: bool | None = None
+    skip_head: int | None = None  # 片头跳过秒数（0~30）
+    skip_tail: int | None = None  # 片尾提前秒数（0~30）
 
 
 @app.patch("/api/dramas/{drama_id}")
@@ -276,6 +278,11 @@ def patch_drama(drama_id: int, body: WatchPatch):
     if body.favorite is not None:
         sets.append("favorite=?")
         args.append(1 if body.favorite else 0)
+    for k in ("skip_head", "skip_tail"):
+        v = getattr(body, k)
+        if v is not None:
+            sets.append(f"{k}=?")
+            args.append(max(0, min(30, int(v))))
     if sets:
         with get_db() as c:
             c.execute(f"UPDATE dramas SET {', '.join(sets)} WHERE id=?", args + [drama_id])
