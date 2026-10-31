@@ -426,6 +426,28 @@ def trim_detect(drama_id: int):
     return {"ok": True, "started": True}
 
 
+@app.get("/api/trim/stats")
+def trim_stats():
+    """裁边分析进度（设置页面板用）。"""
+    with get_db() as c:
+        q = lambda sql: c.execute(sql).fetchone()[0]  # noqa: E731
+        return {
+            "total": q("SELECT COUNT(*) FROM dramas WHERE download_state='done' AND episodes_local >= 2"),
+            "checked": q("SELECT COUNT(*) FROM dramas WHERE trim_checked=1"),
+            "detected": q("SELECT COUNT(*) FROM dramas WHERE trim_checked=1 AND skip_head > 0"),
+            "disabled": q("SELECT COUNT(*) FROM dramas WHERE trim_checked=1 AND trim_enabled=0"),
+        }
+
+
+@app.post("/api/trim/reset")
+def trim_reset():
+    """清空全部分析结果，让后台线程全库重跑（算法升级后重测用）。"""
+    with get_db() as c:
+        n = c.execute("UPDATE dramas SET trim_checked=0 WHERE trim_checked=1").rowcount
+    log.info("trim 全部重置：%d 部待重新分析", n)
+    return {"reset": n}
+
+
 @app.get("/api/about")
 def about():
     """版本与运行环境信息（设置页展示；不含任何敏感值）。"""

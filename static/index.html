@@ -154,6 +154,18 @@
       <button id="cfg-reset" class="ghost">恢复环境默认</button>
     </div>
     <div class="panel">
+      <h2>自动裁边 <span class="muted" style="font-size:11px;font-weight:400">相邻集重叠自动检测</span></h2>
+      <div class="set-row"><span class="k">分析进度</span><span id="trim-progress">…</span></div>
+      <div class="meter" style="margin:6px 0 12px"><i id="trim-meter" style="width:0"></i></div>
+      <div class="set-row"><span class="k">检出重叠</span><span id="trim-detected">…</span></div>
+      <div class="set-row"><span class="k">已手动关闭裁边</span><span id="trim-disabled">…</span></div>
+      <p class="muted" style="font-size:12px;margin:8px 0 10px">
+        扫描入库后服务端自动异步分析（短剧优先），秒数自动写入，用户端只留开关。
+        「重新检测全部」清空结果让全库重跑（如算法升级后重测）。
+      </p>
+      <button id="trim-reset-btn" class="danger">重新检测全部</button>
+    </div>
+    <div class="panel">
       <h2>手动同步</h2>
       <p class="muted" style="font-size:12px;margin-bottom:10px">一般无需手动触发，服务启动时会自动全量同步。</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">

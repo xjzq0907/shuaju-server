@@ -13,7 +13,16 @@ const CFG_FIELDS = {
 export function renderSettings() {
   loadAbout();
   loadConfig();
+  loadTrim();
   $("#cfg-save").onclick = saveConfig;
+  $("#trim-reset-btn").onclick = async () => {
+    if (!confirm("清空全部裁边分析结果，让后台线程全库重跑？（每部剧几秒，期间逐步出结果）")) return;
+    try {
+      const r = await api("/api/trim/reset", { method: "POST" });
+      toast(`已重置 ${r.reset} 部，后台将逐步重新分析`);
+      loadTrim();
+    } catch (e) { toast(e.message, true); }
+  };
   $("#cfg-reset").onclick = async () => {
     if (!confirm("清空所有页面配置，恢复 .env 环境默认值？")) return;
     try {
@@ -51,6 +60,23 @@ export function renderSettings() {
       toast(e.message, true);
     }
   };
+}
+
+async function loadTrim() {
+  try {
+    const t = await api("/api/trim/stats");
+    const pct = t.total ? Math.round((t.checked / t.total) * 100) : 0;
+    $("#trim-progress").innerHTML = `<b>${t.checked}</b> / ${t.total} 部${t.total && t.checked < t.total ? ' <span class="tag info">分析中</span>' : ' <span class="tag ok">完成</span>'}`;
+    $("#trim-detected").innerHTML = `${t.detected} 部检出重叠 <span class="muted">（已自动裁边）</span>`;
+    $("#trim-disabled").innerHTML = t.disabled
+      ? `${t.disabled} 部`
+      : '<span class="muted">无</span>';
+    const m = $("#trim-meter");
+    m.style.width = "0";
+    requestAnimationFrame(() => (m.style.width = pct + "%"));
+  } catch (e) {
+    $("#trim-progress").textContent = "获取失败";
+  }
 }
 
 async function loadAbout() {
