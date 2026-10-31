@@ -65,14 +65,15 @@ export function renderSettings() {
 /** 扫码配置：把当前站点地址画成二维码（App 首启扫码自动填） */
 async function loadQr() {
   try {
-    const svg = await fetch(`/api/qr.svg?data=${encodeURIComponent(location.origin)}`).then((r) => r.text());
     const box = $("#qr-box");
-    box.innerHTML = svg;
-    const el = box.querySelector("svg");
-    if (el) {
-      el.setAttribute("width", "132");
-      el.setAttribute("height", "132");
-    }
+    box.innerHTML = '';
+    const img = new Image();
+    img.src = `/api/qr.png?data=${encodeURIComponent(location.origin)}&scale=8`;
+    img.width = 148;
+    img.height = 148;
+    img.alt = '扫码配置二维码';
+    img.style.imageRendering = 'pixelated';
+    box.appendChild(img);
   } catch (_) {}
 }
 

@@ -448,23 +448,43 @@ def trim_reset():
     return {"reset": n}
 
 
-@app.get("/api/qr.svg")
-def qr_svg(data: str = Query(..., max_length=300)):
-    """二维码 SVG（设置页展示，App 首启扫码自动填服务器地址）。"""
+@app.get("/api/qr.png")
+def qr_png(data: str = Query(..., max_length=300), scale: int = Query(8, ge=2, le=16)):
+    """二维码 PNG（纯标准库编码，从 qrcode 矩阵直接画点，无 SVG 缩放歧义）。"""
+    import struct
+    import zlib
+
     import qrcode
-    import qrcode.image.svg
 
     qr = qrcode.QRCode(
-        error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=2
+        error_correction=qrcode.constants.ERROR_CORRECT_M, border=2
     )
     qr.add_data(data)
     qr.make(fit=True)
-    img = qr.make_image(image_factory=qrcode.image.svg.SvgImage)
-    out = img.to_string()
-    return Response(
-        content=out.decode() if isinstance(out, bytes) else out,
-        media_type="image/svg+xml",
+    matrix = qr.get_matrix()  # list[list[bool]]，含静区
+    n = len(matrix)
+    size = n * scale
+
+    raw = bytearray()
+    for row in matrix:
+        line = bytearray()
+        for v in row:
+            line.extend((b"\x00\x00\x00" if v else b"\xff\xff\xff") * scale)
+        for _ in range(scale):
+            raw.append(0)
+            raw.extend(line)
+
+    def chunk(tag: bytes, d: bytes) -> bytes:
+        c = struct.pack(">I", len(d)) + tag + d
+        return c + struct.pack(">I", zlib.crc32(tag + d) & 0xFFFFFFFF)
+
+    png = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(bytes(raw), 9))
+        + chunk(b"IEND", b"")
     )
+    return Response(content=png, media_type="image/png")
 
 
 @app.get("/api/about")
