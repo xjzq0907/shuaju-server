@@ -23,7 +23,7 @@ FastAPI + SQLite，前端为无构建 SPA + PWA，同时为 [Shuaju Android App]
 
 ```bash
 cp .env.example .env   # 修改路径等配置
-docker compose up -d --build
+GIT_REV=$(git rev-parse --short HEAD) docker compose up -d --build   # GIT_REV 可选，设置后「设置页」显示版本
 ```
 
 服务监听 `15006` 端口（`network_mode: host`，可用 `PORT` 改）：

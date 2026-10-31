@@ -129,6 +129,29 @@ def scan_local():
     return count
 
 
+def scan_one(drama_id: int) -> dict:
+    """重扫单部剧的本地文件夹：以磁盘为准刷新集数/大小；文件夹消失则清空本地信息。"""
+    now = int(time.time())
+    with get_db() as conn:
+        r = conn.execute("SELECT * FROM dramas WHERE id=?", (drama_id,)).fetchone()
+        if not r:
+            return {"ok": False, "reason": "not_found"}
+        folder = r["local_dir"] if (r["local_dir"] and os.path.isdir(r["local_dir"])) else os.path.join(config.LIB_ROOT, r["title"])
+        if not os.path.isdir(folder):
+            conn.execute(
+                "UPDATE dramas SET download_state='none', episodes_local=0, local_dir=NULL, updated_at=? WHERE id=?",
+                (now, drama_id),
+            )
+            return {"ok": True, "episodes": 0, "folder_missing": True}
+        eps, size_mb = folder_stats(folder)
+        conn.execute(
+            """UPDATE dramas SET local_dir=?, episodes_local=?, size_mb=?,
+               download_state=?, updated_at=? WHERE id=?""",
+            (folder, eps, size_mb, "done" if eps else "none", now, drama_id),
+        )
+        return {"ok": True, "episodes": eps, "size_mb": size_mb}
+
+
 def full_sync():
     import_csv()
     mirror_state()

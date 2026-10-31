@@ -81,8 +81,10 @@ def stats():
     try:
         st = os.statvfs(config.LIB_ROOT)
         data["disk_free_gb"] = round(st.f_bavail * st.f_frsize / 2**30, 1)
+        data["disk_total_gb"] = round(st.f_blocks * st.f_frsize / 2**30, 1)
     except OSError:
         data["disk_free_gb"] = None
+        data["disk_total_gb"] = None
     return data
 
 
@@ -363,6 +365,27 @@ def drama_cover(drama_id: int):
     ext = cover.rsplit(".", 1)[-1].lower()
     media = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}[ext]
     return FileResponse(os.path.join(r["local_dir"], cover), media_type=media)
+
+
+@app.post("/api/dramas/{drama_id}/rescan")
+def rescan_drama(drama_id: int):
+    """单剧重扫：以本地文件夹为准刷新集数/大小；文件夹消失则清空本地信息。"""
+    with get_db() as c:
+        if not c.execute("SELECT id FROM dramas WHERE id=?", (drama_id,)).fetchone():
+            raise HTTPException(404)
+    return sync.scan_one(drama_id)
+
+
+@app.get("/api/about")
+def about():
+    """版本与运行环境信息（设置页展示；不含任何敏感值）。"""
+    return {
+        "name": "shuaju-server",
+        "version": os.environ.get("GIT_REV", "unknown"),
+        "auth_enabled": bool(config.AUTH_TOKEN),
+        "csv_ready": os.path.exists(config.CSV_PATH),
+        "lib_exists": os.path.isdir(config.LIB_ROOT),
+    }
 
 
 # ---------- 全库索引 ----------

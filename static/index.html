@@ -3,21 +3,49 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>短剧库</title>
+<title>Shuaju 刷剧 · 管理台</title>
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <header id="topbar">
-  <div class="brand">📺 短剧库</div>
+  <div class="brand">📺 <em>Shuaju</em> 刷剧</div>
   <nav>
+    <a href="#/dashboard" data-nav="dashboard">仪表盘</a>
     <a href="#/library" data-nav="library">剧库</a>
-    <a href="#/index" data-nav="index">全库索引</a>
-    <a href="#/queue" data-nav="queue">下载队列 <span id="queue-badge" class="badge hidden"></span></a>
+    <a href="#/index" data-nav="index">索引</a>
+    <a href="#/queue" data-nav="queue">队列 <span id="queue-badge" class="badge hidden"></span></a>
+    <a href="#/settings" data-nav="settings">设置</a>
   </nav>
   <div id="stats-line"></div>
 </header>
 
-<main id="view-library" class="view">
+<main id="view-dashboard" class="view">
+  <div class="toolbar">
+    <input id="gs-input" type="search" placeholder="全局搜索：本地剧库 + 全库索引…">
+    <button id="gs-btn" class="primary">搜索</button>
+  </div>
+  <div id="gs-results"></div>
+  <div id="dash-main">
+    <div id="stat-cards" class="stat-cards"></div>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>流水线</h2>
+        <button id="dash-pause-btn">暂停</button>
+      </div>
+      <div id="dash-pipeline" class="pipeline-strip muted">加载中…</div>
+      <div id="dash-batch-log" class="log-live hidden"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>最近批次</h2>
+        <a href="#/queue" class="muted" style="font-size:12px">全部 ›</a>
+      </div>
+      <div id="dash-batches" class="muted">加载中…</div>
+    </div>
+  </div>
+</main>
+
+<main id="view-library" class="view hidden">
   <div class="toolbar">
     <input id="lib-search" type="search" placeholder="搜索剧名…">
     <select id="lib-state">
@@ -34,21 +62,34 @@
       <option value="title">按剧名</option>
     </select>
     <span id="lib-count" class="muted"></span>
+    <button id="lib-select-btn">批量选择</button>
   </div>
   <div id="lib-grid" class="grid"></div>
-  <div id="lib-pager" class="pager"></div>
+  <div id="lib-skeleton" class="grid hidden"></div>
+  <div id="lib-empty" class="empty-state hidden"></div>
+  <button id="lib-more" class="more hidden" style="display:block;margin:14px auto">加载更多</button>
+  <div id="lib-sentinel" style="height:1px"></div>
+  <div id="lib-opbar" class="opbar hidden">
+    <span class="count" id="lib-sel-count">已选 0</span>
+    <button id="op-queue">加入队列</button>
+    <button id="op-watch">标记已看</button>
+    <button id="op-blacklist" class="danger">拉黑</button>
+    <button id="op-cancel" class="ghost">取消</button>
+  </div>
 </main>
 
 <main id="view-index" class="view hidden">
   <div class="toolbar">
-    <input id="idx-search" type="search" placeholder="搜索 7.8 万部全库索引…">
+    <input id="idx-search" type="search" placeholder="搜索全库索引…">
     <button id="idx-queue-selected" class="primary">加入下载队列</button>
     <span id="idx-count" class="muted"></span>
   </div>
+  <div class="table-wrap">
   <table class="table">
     <thead><tr><th></th><th>剧名</th><th>集数</th><th>更新日期</th><th>网盘</th><th>下载</th><th></th></tr></thead>
     <tbody id="idx-body"></tbody>
   </table>
+  </div>
   <div id="idx-pager" class="pager"></div>
   <div class="panel">
     <div class="panel-head">
@@ -77,6 +118,35 @@
   </div>
 </main>
 
+<main id="view-settings" class="view hidden">
+  <div class="set-grid">
+    <div class="panel">
+      <h2>关于</h2>
+      <div class="set-row"><span class="k">服务端版本</span><span id="set-version">…</span></div>
+      <div class="set-row"><span class="k">访问令牌</span><span id="set-auth">…</span></div>
+      <div class="set-row"><span class="k">索引 CSV</span><span id="set-csv">…</span></div>
+      <div class="set-row"><span class="k">短剧库目录</span><span id="set-lib">…</span></div>
+      <div class="set-row"><span class="k">手机 PWA</span><a href="/w" style="color:var(--accent)">/w</a></div>
+      <div class="set-row"><span class="k">安卓 App</span><a href="/duanju.apk" style="color:var(--accent)">下载 APK</a></div>
+    </div>
+    <div class="panel">
+      <h2>手动同步</h2>
+      <p class="muted" style="font-size:12px;margin-bottom:10px">一般无需手动触发，服务启动时会自动全量同步。</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button data-sync="csv">导入索引 CSV</button>
+        <button data-sync="state">镜像转存状态</button>
+        <button data-sync="local">扫描本地库</button>
+      </div>
+      <div id="sync-result" class="result-box hidden"></div>
+    </div>
+    <div class="panel danger-zone">
+      <h2>危险区</h2>
+      <p class="muted" style="font-size:12px;margin-bottom:10px">清空所有等待中的下载队列（不影响已完成批次与已下载文件）。</p>
+      <button id="clear-queue-btn" class="danger">清空下载队列</button>
+    </div>
+  </div>
+</main>
+
 <main id="view-watch" class="view hidden">
   <div class="watch-wrap">
     <div class="watch-head">
@@ -100,16 +170,16 @@
   </div>
 </main>
 
-<div id="modal" class="modal hidden">
-  <div class="modal-body">
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <div id="modal-content"></div>
-  </div>
-</div>
+<!-- 详情抽屉 -->
+<div id="drawer-mask" class="drawer-mask"></div>
+<aside id="drawer" class="drawer">
+  <button class="d-close" id="drawer-close">✕</button>
+  <div id="drawer-content"></div>
+</aside>
 
 <div id="toast" class="toast hidden"></div>
 
 <script src="/auth.js"></script>
-<script src="/app.js"></script>
+<script type="module" src="/app.js"></script>
 </body>
 </html>

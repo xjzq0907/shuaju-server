@@ -1,6 +1,9 @@
 services:
   duanju-manager:
-    build: .
+    build:
+      context: .
+      args:
+        - GIT_REV=${GIT_REV:-unknown}
     container_name: duanju-manager
     network_mode: host
     restart: unless-stopped
