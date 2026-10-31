@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+
+# SQLite 数据与备份（实际库在 docker 卷 /data/duanju）
+*.db
+*.db.bak-*
+
+# APK 构建产物（由 duanju_app 项目产出，不入库）
+static/*.apk

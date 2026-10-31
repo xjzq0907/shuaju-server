@@ -1,0 +1,11 @@
+services:
+  duanju-manager:
+    build: .
+    container_name: duanju-manager
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      # 索引 CSV + import_state.json（与 CLI 共用，读写）
+      # 本地短剧库（扫描 + 播放 + 补零）
+      # SQLite + 运行数据
+      # quark-auto-save 配置（只读，取 WebUI 账号算 token）

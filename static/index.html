@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>短剧库</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header id="topbar">
+  <div class="brand">📺 短剧库</div>
+  <nav>
+    <a href="#/library" data-nav="library">剧库</a>
+    <a href="#/index" data-nav="index">全库索引</a>
+    <a href="#/queue" data-nav="queue">下载队列 <span id="queue-badge" class="badge hidden"></span></a>
+  </nav>
+  <div id="stats-line"></div>
+</header>
+
+<main id="view-library" class="view">
+  <div class="toolbar">
+    <input id="lib-search" type="search" placeholder="搜索剧名…">
+    <select id="lib-state">
+      <option value="done">已下载</option>
+      <option value="queued">下载中</option>
+      <option value="not_downloaded">未下载</option>
+      <option value="dead">链接失效</option>
+      <option value="all">全部</option>
+    </select>
+    <select id="lib-sort">
+      <option value="updated">按更新日期</option>
+      <option value="episodes">按集数</option>
+      <option value="size">按大小</option>
+      <option value="title">按剧名</option>
+    </select>
+    <span id="lib-count" class="muted"></span>
+  </div>
+  <div id="lib-grid" class="grid"></div>
+  <div id="lib-pager" class="pager"></div>
+</main>
+
+<main id="view-index" class="view hidden">
+  <div class="toolbar">
+    <input id="idx-search" type="search" placeholder="搜索 7.8 万部全库索引…">
+    <button id="idx-queue-selected" class="primary">加入下载队列</button>
+    <span id="idx-count" class="muted"></span>
+  </div>
+  <table class="table">
+    <thead><tr><th></th><th>剧名</th><th>集数</th><th>更新日期</th><th>网盘</th><th>下载</th><th></th></tr></thead>
+    <tbody id="idx-body"></tbody>
+  </table>
+  <div id="idx-pager" class="pager"></div>
+  <div class="panel">
+    <div class="panel-head">
+      <h2>黑名单 <span id="bl-count" class="muted"></span></h2>
+      <button id="bl-toggle">展开</button>
+    </div>
+    <div id="bl-list" class="hidden"></div>
+  </div>
+</main>
+
+<main id="view-queue" class="view hidden">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>流水线</h2>
+      <button id="pause-btn">暂停</button>
+    </div>
+    <div id="pipeline-info" class="muted">加载中…</div>
+  </div>
+  <div class="panel">
+    <h2>当前队列</h2>
+    <div id="queue-list" class="muted">空</div>
+  </div>
+  <div class="panel">
+    <h2>批次历史</h2>
+    <div id="batch-list"></div>
+  </div>
+</main>
+
+<main id="view-watch" class="view hidden">
+  <div class="watch-wrap">
+    <div class="watch-head">
+      <a href="#/library" class="back">← 返回剧库</a>
+      <h1 id="watch-title"></h1>
+      <div class="watch-ops">
+        <select id="ep-select"></select>
+        <select id="speed-select">
+          <option value="0.5">0.5x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+        <button id="prev-ep">上一集</button>
+        <button id="next-ep">下一集</button>
+      </div>
+    </div>
+    <video id="player" controls autoplay></video>
+    <div id="watch-status" class="muted"></div>
+    <div id="ep-grid" class="ep-grid"></div>
+  </div>
+</main>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-body">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

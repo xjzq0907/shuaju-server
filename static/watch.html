@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0b0b12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/watch.css">
+<title>短剧</title>
+</head>
+<body>
+
+<!-- ========== 首页 ========== -->
+<div id="home" class="view">
+  <header class="home-head">
+    <span class="brand">短剧</span>
+    <input id="q" type="search" placeholder="搜索短剧…" autocomplete="off">
+    <a class="head-link" href="/" title="管理台">⚙︎</a>
+  </header>
+
+  <!-- 继续观看 -->
+  <section id="resume-sec" class="hidden">
+    <h2 class="sec-title">继续观看</h2>
+    <div id="resume-row" class="resume-row"></div>
+  </section>
+
+  <!-- 筛选 -->
+  <nav class="chips" id="chips">
+    <button class="chip on" data-ws="">全部</button>
+    <button class="chip" data-ws="watching">在看</button>
+    <button class="chip" data-ws="watched">已看完</button>
+  </nav>
+
+  <div id="skeleton" class="grid skeleton hidden"></div>
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty hidden">
+    <p id="empty-text">没有找到短剧</p>
+    <button id="clear-q" class="empty-btn">清除搜索</button>
+  </div>
+  <div id="sentinel"></div>
+  <button id="more" class="more hidden">加载更多</button>
+  <div class="home-foot"><span id="total"></span> · <a href="/">管理台</a> · <a href="/duanju.apk">下载安卓App</a></div>
+</div>
+
+<!-- ========== 播放器 ========== -->
+<div id="player" class="hidden">
+  <video id="video" playsinline webkit-playsinline preload="auto"></video>
+
+  <div id="spinner" class="spinner hidden"></div>
+  <div id="ep-flash" class="ep-flash hidden"></div>
+  <div id="boost" class="boost hidden">2倍速</div>
+
+  <div class="hud" id="hud">
+    <div class="hud-top">
+      <button class="icon-btn" id="back-btn">‹</button>
+      <div class="hud-title">
+        <div class="p-title" id="p-title"></div>
+        <div class="p-ep" id="p-ep"></div>
+      </div>
+      <button class="icon-btn" id="help-btn">ⓘ</button>
+    </div>
+    <div class="hud-bottom">
+      <div class="bar-wrap" id="bar-wrap">
+        <div class="bar"><div id="bar-fill"></div><div id="bar-buf"></div></div>
+      </div>
+      <div class="times"><span id="t-cur">0:00</span><span id="t-dur">0:00</span></div>
+      <div class="hud-actions">
+        <button class="act" id="prev-btn">‹ 上一集</button>
+        <button class="play-btn" id="play-btn">▶</button>
+        <button class="act" id="next-btn">下一集 ›</button>
+        <div class="spacer"></div>
+        <button class="act" id="speed-btn">1.0×</button>
+        <button class="act" id="q-btn">原画</button>
+        <button class="act" id="drawer-btn">选集</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手势教学 -->
+  <div id="gesture-hint" class="gesture-hint hidden">
+    <div class="gh-item"><b>上下滑动</b><span>切换剧集</span></div>
+    <div class="gh-item"><b>单击</b><span>显示 / 隐藏控制条</span></div>
+    <div class="gh-item"><b>长按</b><span>2倍速快进（松开恢复）</span></div>
+    <div class="gh-item"><b>双击左右</b><span>快退 / 快进 10 秒</span></div>
+  </div>
+
+  <!-- 看完面板 -->
+  <div id="finish-panel" class="finish-panel hidden">
+    <div class="fp-card">
+      <div class="fp-title" id="fp-title"></div>
+      <div class="fp-sub">已看完</div>
+      <div class="fp-btns">
+        <button class="fp-btn" id="fp-replay">重看本集</button>
+        <button class="fp-btn primary" id="fp-home">返回首页</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 选集抽屉 -->
+  <div id="drawer" class="drawer hidden">
+    <div class="drawer-head">
+      <span id="drawer-title">选集</span>
+      <button class="drawer-close" id="drawer-close">✕</button>
+    </div>
+    <div class="ep-grid" id="ep-grid"></div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+</div>
+
+<script src="/watch.js"></script>
+</body>
+</html>
