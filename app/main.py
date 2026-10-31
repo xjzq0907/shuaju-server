@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 import re
 import secrets
 import shutil
@@ -143,31 +144,56 @@ def _feed_key(title: str) -> str:
 
 
 @app.get("/api/dramas/random")
-def random_dramas(n: int = Query(5, le=20), exclude: str = ""):
-    """随机取 n 部已下载的剧（发现流用）。exclude=逗号分隔的 id，避免刷到重复。"""
-    where = "download_state='done' AND local_dir IS NOT NULL AND episodes_local > 0"
-    args: list = []
-    ids = [int(x) for x in exclude.split(",") if x.strip().isdigit()]
-    if ids:
-        where += f" AND id NOT IN ({','.join('?' * len(ids))})"
-        args += ids
+def random_dramas(
+    n: int = Query(5, le=20),
+    exclude: str = "",
+    seed: int | None = None,
+    offset: int = Query(0, ge=0),
+):
+    """发现流随机剧：seed+offset 确定性洗牌分页 + 未看加权 + 归一化剧名去重。
+
+    - 不带 seed：自生成种子，exclude 生效（旧客户端兼容，只保留最近 300 个防 URL 膨胀）
+    - 带 seed：同 seed 同序列，按 offset 翻页；响应带 pool/offset/exhausted，
+      exhausted=true 表示本轮洗牌刷完（客户端换新种子重开一轮即可无缝循环）
+    - 加权：未看剧权重 1.0、已看 0.35（Efraimidis-Spirakis 序，同 seed 完全确定）
+    """
     with get_db() as c:
         rows = c.execute(
-            f"SELECT * FROM dramas WHERE {where} ORDER BY RANDOM() LIMIT ?",
-            args + [n * 3],
+            "SELECT * FROM dramas WHERE download_state='done' AND local_dir IS NOT NULL"
+            " AND episodes_local > 0 ORDER BY id"
         ).fetchall()
-    # 按归一化剧名去重（同剧不同链接/序号前缀/标点变体只出一部）
-    seen: set = set()
-    items = []
+    # 同剧变体只留一部（优先未看的代表；服务端去重后客户端无需跨批过滤）
+    groups: dict = {}
     for r in rows:
         k = _feed_key(r["title"])
-        if k in seen:
-            continue
-        seen.add(k)
-        items.append(drama_to_dict(r))
-        if len(items) >= n:
-            break
-    return {"items": items}
+        g = groups.get(k)
+        if g is None or (g["watch_state"] != "unwatched" and r["watch_state"] == "unwatched"):
+            groups[k] = r
+    pool = list(groups.values())
+    if seed is None:
+        ids = [int(x) for x in exclude.split(",") if x.strip().isdigit()]
+        if len(ids) > 300:
+            ids = ids[-300:]
+        if ids:
+            banned = set(ids)
+            pool = [r for r in pool if r["id"] not in banned]
+        seed = random.randrange(1 << 31)
+    rng = random.Random(seed)
+    scored = []
+    for r in pool:
+        w = 1.0 if r["watch_state"] == "unwatched" else 0.35
+        scored.append((rng.random() ** (1.0 / w), r))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    ordered = [r for _, r in scored]
+    items = ordered[offset : offset + n]
+    end = offset + len(items)
+    return {
+        "items": [drama_to_dict(r) for r in items],
+        "seed": seed,
+        "offset": end,
+        "pool": len(ordered),
+        "exhausted": end >= len(ordered),
+    }
 
 
 @app.get("/api/dramas/{drama_id}")
