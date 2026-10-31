@@ -94,12 +94,14 @@ def push_existing_drive_files(drama: dict, aria2: Aria2Client) -> int:
     for it in items:
         if it.get("dir"):
             continue
-        if util.PAT_BARE.match(it["file_name"]) or util.PAT_JI.match(it["file_name"]):
+        if util.is_episode_name(it["file_name"]):
             eps_files.append(it)
     if not eps_files:
         raise RuntimeError("网盘目录内没有剧集文件")
     out_dir = os.path.join(config.LIB_ROOT, drama["title"])
     os.makedirs(out_dir, exist_ok=True)
+    # aria2 容器的挂载点与 manager 不同，推给它的必须是 aria2 侧路径
+    aria2_dir = os.path.join(config.ARIA2_LIB_PATH, drama["title"])
     pushed = 0
     ua = f"User-Agent: {QUARK_UA}"
     for i in range(0, len(eps_files), 20):
@@ -107,7 +109,7 @@ def push_existing_drive_files(drama: dict, aria2: Aria2Client) -> int:
         urls, extra_cookie = drive.download_urls([x["fid"] for x in chunk])
         headers = [f"Cookie: {extra_cookie}".strip(), ua]
         for item, durl in zip(chunk, urls):
-            aria2.add_uri(durl, item["file_name"], out_dir, headers)
+            aria2.add_uri(durl, item["file_name"], aria2_dir, headers)
             pushed += 1
     return pushed
 
@@ -193,7 +195,8 @@ def run_batch(batch_id: int, items: list):
                     "UPDATE queue SET status='running', batch_id=? WHERE id=?",
                     (batch_id, it["queue_id"]),
                 )
-                if r == "up_to_date" and not os.path.isdir(
+                # 本地没有任何剧集文件才补推（目录存在但为空也算缺失——失败重试会留下空目录）
+                if r == "up_to_date" and not util.episode_map(
                     os.path.join(config.LIB_ROOT, d["title"])
                 ):
                     retry_push.append((it["queue_id"], d))

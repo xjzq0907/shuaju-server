@@ -4,6 +4,7 @@ import { $, api, post, put, toast } from "../shared.js";
 const CFG_FIELDS = {
   LIB_ROOT: "#cfg-lib",
   ARIA2_RPC: "#cfg-aria2",
+  ARIA2_LIB_PATH: "#cfg-aria2lib",
   QUARK_AUTOSAVE_URL: "#cfg-quark",
   SAVE_ROOT: "#cfg-saveroot",
   BATCH_SIZE: "#cfg-batch",

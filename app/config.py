@@ -9,6 +9,8 @@ DATA_DIR = os.environ.get("DATA_DIR", "/data/duanju")
 QUARK_CFG = os.environ.get("QUARK_CFG", "/config/quark_config.json")
 QUARK_AUTOSAVE_URL = os.environ.get("QUARK_AUTOSAVE_URL", "http://127.0.0.1:15005")
 ARIA2_RPC = os.environ.get("ARIA2_RPC", "http://127.0.0.1:16800/jsonrpc")
+# 短剧库目录在 aria2 容器视角下的路径（aria2 挂载点与 manager 不同，补推直链时用它）
+ARIA2_LIB_PATH = os.environ.get("ARIA2_LIB_PATH", "/downloads/短剧库")
 BATCH_SIZE = int(os.environ.get("BATCH_SIZE", "20"))
 
 DB_PATH = os.path.join(DATA_DIR, "duanju.db")

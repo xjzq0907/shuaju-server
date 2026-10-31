@@ -15,6 +15,7 @@ log = logging.getLogger("settings")
 EDITABLE = {
     "LIB_ROOT": ("LIB_ROOT", "str"),
     "ARIA2_RPC": ("ARIA2_RPC", "str"),
+    "ARIA2_LIB_PATH": ("ARIA2_LIB_PATH", "str"),
     "QUARK_AUTOSAVE_URL": ("QUARK_AUTOSAVE_URL", "str"),
     "SAVE_ROOT": ("SAVE_ROOT", "str"),
     "BATCH_SIZE": ("BATCH_SIZE", "int"),
@@ -75,7 +76,7 @@ def save_settings(data: dict) -> dict:
                 raise ValueError(f"{k} 不能为空")
             if k in ("ARIA2_RPC", "QUARK_AUTOSAVE_URL") and not v.startswith(("http://", "https://")):
                 raise ValueError(f"{k} 必须以 http:// 或 https:// 开头")
-            if k == "LIB_ROOT" and not v.startswith("/"):
+            if k in ("LIB_ROOT", "ARIA2_LIB_PATH") and not v.startswith("/"):
                 raise ValueError(f"{k} 必须是绝对路径")
         updates[k] = v
     if not updates:

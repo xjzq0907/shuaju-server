@@ -396,6 +396,7 @@ def about():
 class SettingsBody(BaseModel):
     LIB_ROOT: str | None = None
     ARIA2_RPC: str | None = None
+    ARIA2_LIB_PATH: str | None = None
     QUARK_AUTOSAVE_URL: str | None = None
     SAVE_ROOT: str | None = None
     BATCH_SIZE: int | None = None

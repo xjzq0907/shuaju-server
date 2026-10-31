@@ -12,6 +12,11 @@ PAT_EP_PATTERNS = [
 PAT_EPISODES = re.compile(r"[（(](\d+)集")
 
 
+def is_episode_name(name: str) -> bool:
+    """文件名是否是剧集文件（任一集数命名模式匹配，模式均已限定 .mp4）。"""
+    return any(p.match(name) for p in PAT_EP_PATTERNS)
+
+
 def expected_episodes(title: str):
     m = PAT_EPISODES.search(title)
     return int(m.group(1)) if m else None
@@ -54,7 +59,7 @@ def pad_folder(folder: str) -> int:
     width = len(str(max(eps)))
     renamed = 0
     for n, f in eps.items():
-        new = f"{n:0{width}d}.mp4" if PAT_BARE.match(f) else f"第{n:0{width}d}集.mp4"
+        new = f"{n:0{width}d}.mp4" if PAT_EP_PATTERNS[0].match(f) else f"第{n:0{width}d}集.mp4"
         if new != f:
             os.rename(os.path.join(folder, f), os.path.join(folder, new))
             renamed += 1
