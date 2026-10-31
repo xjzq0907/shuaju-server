@@ -2,6 +2,7 @@
 import { $, esc, api, post, fmtGB, toast } from "../shared.js";
 
 let timer = null;
+let statsAnimated = false; // 数字滚动/进度条生长只在首次渲染播放
 
 export function cleanupDashboard() {
   if (timer) { clearInterval(timer); timer = null; }
@@ -41,15 +42,38 @@ async function loadStats() {
     const cls = usedPct > 92 ? "err" : usedPct > 75 ? "warn" : "";
     $("#stat-cards").innerHTML = `
       <div class="stat-card"><div class="label">已下载</div>
-        <div class="value">${s.downloaded}<small> 部</small></div></div>
+        <div class="value"><span data-count="${s.downloaded}">0</span><small> 部</small></div></div>
       <div class="stat-card"><div class="label">占用容量</div>
-        <div class="value">${fmtGB(s.size_mb)}</div></div>
+        <div class="value"><span data-count="${Math.round(s.size_mb / 1024 * 10) / 10}" data-dec="1">0</span><small> GB</small></div></div>
       <div class="stat-card"><div class="label">磁盘剩余 ${s.disk_free_gb ?? "?"} / ${total || "?"} GB</div>
-        <div class="value">${usedPct}<small>% 已用</small></div>
-        <div class="meter"><i class="${cls}" style="width:${usedPct}%"></i></div></div>
+        <div class="value"><span data-count="${usedPct}">0</span><small>% 已用</small></div>
+        <div class="meter"><i class="${cls}" style="width:${statsAnimated ? usedPct : 0}%"></i></div></div>
       <div class="stat-card"><div class="label">队列中 / 失效链接</div>
-        <div class="value">${s.queued}<small> / ${s.dead}</small></div></div>`;
+        <div class="value"><span data-count="${s.queued}">0</span><small> / ${s.dead}</small></div></div>`;
+    const animate = !statsAnimated;
+    statsAnimated = true;
+    $("#stat-cards").querySelectorAll("[data-count]").forEach((el) => countUp(el, animate));
+    if (animate) {
+      requestAnimationFrame(() =>
+        $("#stat-cards").querySelectorAll(".meter i").forEach((m) => (m.style.width = usedPct + "%"))
+      );
+    }
   } catch {}
+}
+
+/** 数字滚动动画（600ms ease-out） */
+function countUp(el, animate) {
+  const target = Number(el.dataset.count) || 0;
+  const dec = Number(el.dataset.dec) || 0;
+  if (!animate) { el.textContent = target.toFixed(dec); return; }
+  const t0 = performance.now();
+  const tick = (t) => {
+    const p = Math.min(1, (t - t0) / 600);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = (target * eased).toFixed(dec);
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 async function loadPipeline() {
