@@ -81,6 +81,11 @@ def init_db():
             conn.execute("ALTER TABLE dramas ADD COLUMN skip_head INTEGER NOT NULL DEFAULT 0")
         if "skip_tail" not in cols:
             conn.execute("ALTER TABLE dramas ADD COLUMN skip_tail INTEGER NOT NULL DEFAULT 0")
+        # 老库迁移：自动裁边（trim_checked=1 已分析过重叠；trim_enabled 用户开关）
+        if "trim_checked" not in cols:
+            conn.execute("ALTER TABLE dramas ADD COLUMN trim_checked INTEGER NOT NULL DEFAULT 0")
+        if "trim_enabled" not in cols:
+            conn.execute("ALTER TABLE dramas ADD COLUMN trim_enabled INTEGER NOT NULL DEFAULT 1")
 
 
 @contextmanager

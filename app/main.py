@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import config, pipeline, settings_store, sync, transcode, util
+from . import config, pipeline, settings_store, sync, transcode, trim, util
 from .clients import Aria2Client
 from .db import get_db, init_db
 
@@ -54,6 +54,8 @@ def startup():
         except Exception:
             log.exception("启动同步失败")
         pipeline.start_worker()
+        # 扫描后异步分析相邻集重叠（自动裁边），常驻线程循环消化 trim_checked=0 的剧
+        threading.Thread(target=trim.trim_worker, name="trim", daemon=True).start()
 
     threading.Thread(target=boot, name="boot", daemon=True).start()
 
@@ -262,8 +264,9 @@ class WatchPatch(BaseModel):
     watch_state: str | None = None
     last_episode: int | None = None
     favorite: bool | None = None
-    skip_head: int | None = None  # 片头跳过秒数（0~30）
+    skip_head: int | None = None  # 片头跳过秒数（0~30，现由服务端自动检测写入）
     skip_tail: int | None = None  # 片尾提前秒数（0~30）
+    trim_enabled: bool | None = None  # 自动裁边开关（用户可关）
 
 
 @app.patch("/api/dramas/{drama_id}")
@@ -283,6 +286,9 @@ def patch_drama(drama_id: int, body: WatchPatch):
         if v is not None:
             sets.append(f"{k}=?")
             args.append(max(0, min(30, int(v))))
+    if body.trim_enabled is not None:
+        sets.append("trim_enabled=?")
+        args.append(1 if body.trim_enabled else 0)
     if sets:
         with get_db() as c:
             c.execute(f"UPDATE dramas SET {', '.join(sets)} WHERE id=?", args + [drama_id])
@@ -408,6 +414,16 @@ def rescan_drama(drama_id: int):
         if not c.execute("SELECT id FROM dramas WHERE id=?", (drama_id,)).fetchone():
             raise HTTPException(404)
     return sync.scan_one(drama_id)
+
+
+@app.post("/api/dramas/{drama_id}/trim/detect")
+def trim_detect(drama_id: int):
+    """立即重跑该剧相邻集重叠检测（后台异步分析通常自动完成，这里是手动触发）。"""
+    with get_db() as c:
+        if not c.execute("SELECT id FROM dramas WHERE id=?", (drama_id,)).fetchone():
+            raise HTTPException(404)
+    threading.Thread(target=trim.detect_drama, args=(drama_id,), daemon=True).start()
+    return {"ok": True, "started": True}
 
 
 @app.get("/api/about")

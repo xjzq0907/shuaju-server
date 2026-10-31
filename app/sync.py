@@ -105,7 +105,7 @@ def scan_local():
             if row:
                 conn.execute(
                     """UPDATE dramas SET local_dir=?, episodes_local=?, size_mb=?,
-                       download_state='done', updated_at=? WHERE id=?""",
+                       download_state='done', trim_checked=0, updated_at=? WHERE id=?""",
                     (entry.path, eps, size_mb, now, row["id"]),
                 )
             else:
@@ -146,7 +146,7 @@ def scan_one(drama_id: int) -> dict:
         eps, size_mb = folder_stats(folder)
         conn.execute(
             """UPDATE dramas SET local_dir=?, episodes_local=?, size_mb=?,
-               download_state=?, updated_at=? WHERE id=?""",
+               download_state=?, trim_checked=0, updated_at=? WHERE id=?""",
             (folder, eps, size_mb, "done" if eps else "none", now, drama_id),
         )
         return {"ok": True, "episodes": eps, "size_mb": size_mb}
