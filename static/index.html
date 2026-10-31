@@ -127,8 +127,29 @@
       <div class="set-row"><span class="k">访问令牌</span><span id="set-auth">…</span></div>
       <div class="set-row"><span class="k">索引 CSV</span><span id="set-csv">…</span></div>
       <div class="set-row"><span class="k">短剧库目录</span><span id="set-lib">…</span></div>
+      <div class="set-row" id="set-deploy"><span class="k">部署路径</span><span class="muted">…</span></div>
       <div class="set-row"><span class="k">手机 PWA</span><a href="/w" style="color:var(--accent)">/w</a></div>
       <div class="set-row"><span class="k">安卓 App</span><a href="/duanju.apk" style="color:var(--accent)">下载 APK</a></div>
+    </div>
+    <div class="panel">
+      <h2>运行配置 <span class="muted" style="font-size:11px;font-weight:400">存数据库 · 重启保留 · 立即生效</span></h2>
+      <div class="set-form">
+        <label>短剧库目录（宿主机路径，扫描/播放/下载落盘根目录）
+          <input id="cfg-lib" type="text" placeholder="/path/to/短剧库"></label>
+        <label>aria2 JSON-RPC 地址
+          <input id="cfg-aria2" type="text" placeholder="http://127.0.0.1:16800/jsonrpc"></label>
+        <label>quark-auto-save WebUI 地址
+          <input id="cfg-quark" type="text" placeholder="http://127.0.0.1:15005"></label>
+        <label>夸克网盘内的保存根目录
+          <input id="cfg-saveroot" type="text" placeholder="/短剧库"></label>
+        <label>单批转存部数（1~500）
+          <input id="cfg-batch" type="number" min="1" max="500"></label>
+      </div>
+      <p class="muted" style="font-size:12px;margin-bottom:10px">
+        环境变量（.env）是出厂默认，这里的数据库值优先；改目录前请确认容器已挂载对应路径。
+      </p>
+      <button id="cfg-save" class="primary">保存配置</button>
+      <button id="cfg-reset" class="ghost">恢复环境默认</button>
     </div>
     <div class="panel">
       <h2>手动同步</h2>

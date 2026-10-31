@@ -31,6 +31,8 @@ export async function api(path, opts) {
 
 export const post = (path, body) =>
   api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}) });
+export const put = (path, body) =>
+  api(path, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}) });
 export const patch = (path, body) =>
   api(path, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 

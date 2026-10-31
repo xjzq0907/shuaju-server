@@ -57,6 +57,12 @@ CREATE TABLE IF NOT EXISTS batches (
   finished_at INTEGER,
   log TEXT NOT NULL DEFAULT ''
 );
+
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);
 """
 
 

@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import config, pipeline, sync, transcode, util
+from . import config, pipeline, settings_store, sync, transcode, util
 from .clients import Aria2Client
 from .db import get_db, init_db
 
@@ -45,6 +45,7 @@ async def auth_middleware(request: Request, call_next):
 @app.on_event("startup")
 def startup():
     init_db()
+    settings_store.load_into_config()  # DB 运行配置覆盖 env 默认（须在 full_sync 之前）
 
     def boot():
         try:
@@ -385,7 +386,41 @@ def about():
         "auth_enabled": bool(config.AUTH_TOKEN),
         "csv_ready": os.path.exists(config.CSV_PATH),
         "lib_exists": os.path.isdir(config.LIB_ROOT),
+        # 部署级路径（容器挂载决定，页面不可改，仅展示）
+        "quark_links_dir": config.QUARK_LINKS_DIR,
+        "data_dir": config.DATA_DIR,
+        "quark_cfg": config.QUARK_CFG,
     }
+
+
+class SettingsBody(BaseModel):
+    LIB_ROOT: str | None = None
+    ARIA2_RPC: str | None = None
+    QUARK_AUTOSAVE_URL: str | None = None
+    SAVE_ROOT: str | None = None
+    BATCH_SIZE: int | None = None
+
+
+@app.get("/api/settings")
+def get_settings():
+    """当前生效的运行配置（数据库值优先于环境变量默认）。"""
+    return settings_store.get_settings()
+
+
+@app.put("/api/settings")
+def put_settings(body: SettingsBody):
+    """保存运行配置：部分更新、立即生效、持久化到 settings 表。"""
+    try:
+        return settings_store.save_settings(body.dict(exclude_none=True))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.delete("/api/settings")
+def reset_settings():
+    """清空页面配置，恢复环境变量默认值。"""
+    settings_store.clear_settings()
+    return settings_store.get_settings()
 
 
 # ---------- 全库索引 ----------

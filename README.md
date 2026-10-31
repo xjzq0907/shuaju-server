@@ -47,19 +47,27 @@ GIT_REV=$(git rev-parse --short HEAD) docker compose up -d --build   # GIT_REV �
 
 ## 配置
 
-所有配置在 `.env`（模板见 `.env.example`）：
+配置分两层：**设置页可改（存数据库，重启保留、立即生效）** 与 **部署级环境变量（.env，改完需重建容器）**。
+
+设置页「运行配置」面板可改（数据库 `settings` 表持久化，环境变量是出厂默认）：
+
+| 配置项 | 说明 |
+|---|---|
+| `LIB_ROOT` 短剧库目录 | 扫描/播放/下载落盘/拉黑校验的根目录 |
+| `ARIA2_RPC` | aria2 JSON-RPC 地址 |
+| `QUARK_AUTOSAVE_URL` | quark-auto-save WebUI 地址 |
+| `SAVE_ROOT` | 夸克网盘内的保存根目录 |
+| `BATCH_SIZE` | 单批转存部数（1~500） |
+
+部署级（容器挂载相关，只在 `.env` 配置，设置页只读展示路径）：
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `QUARK_LINKS_DIR` | 必填 | 索引与导入状态目录（与 CLI 工具共用） |
-| `LIB_ROOT` | 必填 | 本地短剧库根目录 |
 | `DATA_DIR` | 必填 | SQLite 所在目录 |
 | `QUARK_CFG` | 必填 | quark-auto-save 配置文件（只读） |
 | `AUTH_TOKEN` | 空（不鉴权） | 访问令牌，见「访问令牌」一节 |
 | `PORT` | `15006` | 服务监听端口 |
-| `QUARK_AUTOSAVE_URL` | `http://127.0.0.1:15005` | quark-auto-save WebUI 地址 |
-| `ARIA2_RPC` | `http://127.0.0.1:16800/jsonrpc` | aria2 JSON-RPC 地址 |
-| `BATCH_SIZE` | `20` | 单批转存部数 |
 
 ## API 一览
 
