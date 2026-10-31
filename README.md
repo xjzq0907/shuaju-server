@@ -1,4 +1,10 @@
+<p align="center">
+  <img src="./docs/banner.png" alt="Shuaju 刷剧 — 自托管短剧库 / Self-hosted Short Drama Library" width="100%">
+</p>
+
 # Shuaju 刷剧 · Server
+
+> **English**: Self-hosted short drama (micro-drama) library — search cloud-drive shares, transfer & download, auto-scrape metadata, then binge in browser PWA or Android app. Real-time transcoding (720p/480p), auto episode-overlap trimming, 红果-style swipe feed. FastAPI + SQLite, AGPL-3.0.
 
 自托管短剧库管理系统：网盘资源搜索 → 夸克转存 → 本地下载 → 刮削入库 → 网页 / App 在线播放。
 FastAPI + SQLite，前端为无构建 SPA + PWA，同时为 Android 客户端提供 HTTP API。
