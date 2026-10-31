@@ -1,5 +1,8 @@
 import os
 
+# 访问令牌：非空时 /api/* 需带 X-Auth-Token 头或 ?token= 查询参数；空串 = 不鉴权
+AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "").strip()
+
 QUARK_LINKS_DIR = os.environ.get("QUARK_LINKS_DIR", "/data/quark-links")
 LIB_ROOT = os.environ.get("LIB_ROOT", "/media-lib")
 DATA_DIR = os.environ.get("DATA_DIR", "/data/duanju")

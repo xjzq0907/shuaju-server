@@ -21,17 +21,20 @@ FastAPI + SQLite，前端为无构建 SPA + PWA，同时为 [Shuaju Android App]
 
 ## 快速开始
 
-本项目与特定 homelab 环境绑定（夸克、aria2、磁盘路径），克隆后需先按需修改 `docker-compose.yml` 的数据卷路径与 `app/config.py` 的环境变量默认值，再构建：
-
 ```bash
+cp .env.example .env   # 修改路径等配置
 docker compose up -d --build
 ```
 
-服务监听 `15006` 端口（`network_mode: host`）：
+服务监听 `15006` 端口（`network_mode: host`，可用 `PORT` 改）：
 
 - `/` 管理首页（搜索、队列、批次、黑名单）
 - `/w` 手机 PWA 播放端
 - `/api/*` HTTP API
+
+### 访问令牌（可选）
+
+在 `.env` 设置 `AUTH_TOKEN` 后，所有 `/api/*`（含视频流与封面）需带 `X-Auth-Token` 请求头或 `?token=` 查询参数；网页端首次访问会弹令牌输入框，App 在设置里填同一个值。留空 = 不鉴权。静态页面壳与 `/healthz` 不受令牌保护（数据与视频都在 `/api` 下）。
 
 ## 数据卷
 
@@ -42,14 +45,18 @@ docker compose up -d --build
 | `…/duanju-manager` | `/data/duanju` | SQLite 数据库与运行数据 |
 | `…/quark-auto-save/config/quark_config.json` | `/config/quark_config.json` | 夸克工具 WebUI 配置（只读，用于计算 token） |
 
-## 环境变量（`app/config.py`）
+## 配置
+
+所有配置在 `.env`（模板见 `.env.example`）：
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `QUARK_LINKS_DIR` | `/data/quark-links` | 索引与导入状态目录 |
-| `LIB_ROOT` | `/media-lib` | 短剧库根目录 |
-| `DATA_DIR` | `/data/duanju` | SQLite 所在目录 |
-| `QUARK_CFG` | `/config/quark_config.json` | quark-auto-save 配置文件 |
+| `QUARK_LINKS_DIR` | 必填 | 索引与导入状态目录（与 CLI 工具共用） |
+| `LIB_ROOT` | 必填 | 本地短剧库根目录 |
+| `DATA_DIR` | 必填 | SQLite 所在目录 |
+| `QUARK_CFG` | 必填 | quark-auto-save 配置文件（只读） |
+| `AUTH_TOKEN` | 空（不鉴权） | 访问令牌，见「访问令牌」一节 |
+| `PORT` | `15006` | 服务监听端口 |
 | `QUARK_AUTOSAVE_URL` | `http://127.0.0.1:15005` | quark-auto-save WebUI 地址 |
 | `ARIA2_RPC` | `http://127.0.0.1:16800/jsonrpc` | aria2 JSON-RPC 地址 |
 | `BATCH_SIZE` | `20` | 单批转存部数 |

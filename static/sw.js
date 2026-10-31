@@ -1,6 +1,6 @@
 /* 短剧 PWA：只缓存应用外壳，/api（视频流）一律走网络 */
-const CACHE = "duanju-v4";
-const SHELL = ["/w", "/watch.css", "/watch.js", "/manifest.json", "/icon-192.png", "/icon-512.png"];
+const CACHE = "duanju-v5";
+const SHELL = ["/w", "/watch.css", "/watch.js", "/auth.js", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

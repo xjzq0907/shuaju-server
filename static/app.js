@@ -80,7 +80,7 @@ async function loadLibrary() {
     const eps = d.episodes_local ?? 0;
     const card = document.createElement("div");
     card.className = "card";
-    const coverUrl = d.has_cover ? `/api/dramas/${d.id}/cover` : null;
+    const coverUrl = d.has_cover ? djToken.with(`/api/dramas/${d.id}/cover`) : null;
     card.innerHTML = `
       <div class="cover" ${coverUrl ? `style="background-image:url('${coverUrl}')"` : ""}>${coverUrl ? "" : "📺"}</div>
       <div class="meta">
@@ -478,7 +478,7 @@ async function renderWatch([id, ep]) {
 function playEpisode(ep) {
   watch.cur = ep;
   const video = $("#player");
-  video.src = `/api/dramas/${watch.id}/episodes/${ep}`;
+  video.src = djToken.with(`/api/dramas/${watch.id}/episodes/${ep}`);
   video.playbackRate = Number($("#speed-select").value);
   $("#ep-select").value = ep;
 

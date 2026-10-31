@@ -13,4 +13,5 @@ COPY app ./app
 COPY static ./static
 
 EXPOSE 15006
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "15006"]
+# PORT 可由 .env 覆盖（compose 已透传）
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-15006}"]

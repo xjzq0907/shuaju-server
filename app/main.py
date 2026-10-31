@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import threading
@@ -21,6 +22,22 @@ log = logging.getLogger("main")
 app = FastAPI(title="duanju-manager")
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+
+
+# ---------- 访问令牌 ----------
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    """AUTH_TOKEN 非空时保护 /api/*（含视频流与封面）；静态壳与 /healthz 不拦。
+
+    浏览器 <img>/<video> 无法带自定义头，故同时接受 ?token= 查询参数。
+    """
+    token = config.AUTH_TOKEN
+    if token and request.url.path.startswith("/api/"):
+        supplied = request.headers.get("x-auth-token") or request.query_params.get("token") or ""
+        if not secrets.compare_digest(supplied, token):
+            return JSONResponse({"detail": "未授权：缺少或错误的访问令牌"}, status_code=401)
+    return await call_next(request)
 
 
 # ---------- 启动 ----------

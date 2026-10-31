@@ -55,7 +55,7 @@
       ? `<span class="st">第${d.last_episode}集</span> / 共${eps}集`
       : `共${eps}集`;
     const cover = d.has_cover
-      ? `<img class="cover" src="/api/dramas/${d.id}/cover" alt="" loading="lazy">`
+      ? `<img class="cover" src="${djToken.with(`/api/dramas/${d.id}/cover`)}" alt="" loading="lazy">`
       : `<div class="fallback">${esc(d.title)}</div>`;
     return `<div class="card" data-id="${d.id}">${badge}${cover}
       <div class="meta"><div class="t">${esc(d.title)}</div><div class="s">${sub}</div></div>${prog}</div>`;
@@ -107,7 +107,7 @@
         const eps = d.episodes_local || d.episodes_expected || 0;
         const pct = eps ? Math.min(100, Math.round((d.last_episode / eps) * 100)) : 0;
         const cover = d.has_cover
-          ? `<img class="rcover" src="/api/dramas/${d.id}/cover" alt="">`
+          ? `<img class="rcover" src="${djToken.with(`/api/dramas/${d.id}/cover`)}" alt="">`
           : '<div class="rcover"></div>';
         return `<div class="rcard" data-id="${d.id}">${cover}<div class="rinfo">
           <div class="rtitle">${esc(d.title)}</div>
@@ -205,7 +205,7 @@
       navigator.mediaSession.metadata = new MediaMetadata({
         title: `${drama.title} · 第${curEp}集`,
         artist: "短剧",
-        artwork: [{ src: `/api/dramas/${drama.id}/cover`, sizes: "512x512" }],
+        artwork: [{ src: djToken.with(`/api/dramas/${drama.id}/cover`), sizes: "512x512" }],
       });
       navigator.mediaSession.setActionHandler("play", () => video.play().catch(() => {}));
       navigator.mediaSession.setActionHandler("pause", () => video.pause());
@@ -234,7 +234,9 @@
 
   function epUrl() {
     const q = QUALS[qIdx];
-    return `/api/dramas/${drama.id}/episodes/${curEp}` + (q ? `?q=${q}&t=${qOff.toFixed(2)}` : "");
+    return djToken.with(
+      `/api/dramas/${drama.id}/episodes/${curEp}` + (q ? `?q=${q}&t=${qOff.toFixed(2)}` : "")
+    );
   }
 
   function playCur(flash) {

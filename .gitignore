@@ -1,9 +1,12 @@
 __pycache__/
 *.pyc
 
+# 本地环境配置（含路径与令牌，模板见 .env.example）
+.env
+
 # SQLite 数据与备份（实际库在 docker 卷 /data/duanju）
 *.db
 *.db.bak-*
 
-# APK 构建产物（由 duanju_app 项目产出，不入库）
+# APK 构建产物（由 shuaju-app 项目产出，不入库）
 static/*.apk
