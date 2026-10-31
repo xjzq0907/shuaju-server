@@ -62,6 +62,20 @@ export function renderSettings() {
   };
 }
 
+/** 扫码配置：把当前站点地址画成二维码（App 首启扫码自动填） */
+async function loadQr() {
+  try {
+    const svg = await fetch(`/api/qr.svg?data=${encodeURIComponent(location.origin)}`).then((r) => r.text());
+    const box = $("#qr-box");
+    box.innerHTML = svg;
+    const el = box.querySelector("svg");
+    if (el) {
+      el.setAttribute("width", "132");
+      el.setAttribute("height", "132");
+    }
+  } catch (_) {}
+}
+
 async function loadTrim() {
   try {
     const t = await api("/api/trim/stats");
@@ -80,6 +94,7 @@ async function loadTrim() {
 }
 
 async function loadAbout() {
+  loadQr();
   try {
     const a = await api("/api/about");
     $("#set-version").textContent = a.version;

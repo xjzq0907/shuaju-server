@@ -9,7 +9,7 @@ import threading
 import time
 
 from fastapi import Body, FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -446,6 +446,25 @@ def trim_reset():
         n = c.execute("UPDATE dramas SET trim_checked=0 WHERE trim_checked=1").rowcount
     log.info("trim 全部重置：%d 部待重新分析", n)
     return {"reset": n}
+
+
+@app.get("/api/qr.svg")
+def qr_svg(data: str = Query(..., max_length=300)):
+    """二维码 SVG（设置页展示，App 首启扫码自动填服务器地址）。"""
+    import qrcode
+    import qrcode.image.svg
+
+    qr = qrcode.QRCode(
+        error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=2
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(image_factory=qrcode.image.svg.SvgImage)
+    out = img.to_string()
+    return Response(
+        content=out.decode() if isinstance(out, bytes) else out,
+        media_type="image/svg+xml",
+    )
 
 
 @app.get("/api/about")
