@@ -62,13 +62,15 @@ export function renderSettings() {
   };
 }
 
-/** 扫码配置：把当前站点地址画成二维码（App 首启扫码自动填） */
+/** 扫码配置：把当前站点地址画成二维码（App 首启扫码自动填；兼容 nginx 子路径部署） */
 async function loadQr() {
   try {
+    const base =
+      location.origin + location.pathname.replace(/\/+$/, "");
     const box = $("#qr-box");
     box.innerHTML = '';
     const img = new Image();
-    img.src = `/api/qr.png?data=${encodeURIComponent(location.origin)}&scale=8`;
+    img.src = `/api/qr.png?data=${encodeURIComponent(base)}&scale=8`;
     img.width = 148;
     img.height = 148;
     img.alt = '扫码配置二维码';
