@@ -1,6 +1,7 @@
-/* 短剧 PWA：只缓存应用外壳，/api（视频流）一律走网络 */
+/* 短剧 PWA：只缓存应用外壳，/api（视频流）一律走网络
+   路径全部相对/包含判断：直连部署（/）与 nginx 子路径（/shuaju/）双兼容 */
 const CACHE = "duanju-v5";
-const SHELL = ["/w", "/watch.css", "/watch.js", "/auth.js", "/manifest.json", "/icon-192.png", "/icon-512.png"];
+const SHELL = ["w", "watch.css", "watch.js", "auth.js", "manifest.json", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -16,8 +17,8 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  // API 与视频流不缓存
-  if (url.pathname.startsWith("/api/")) return;
+  // API 与视频流不缓存（includes 兼容 /shuaju/api/ 前缀）
+  if (url.pathname.includes("/api/")) return;
   if (e.request.method !== "GET") return;
   // 外壳：缓存优先，后台更新
   e.respondWith(
