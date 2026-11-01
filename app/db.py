@@ -91,6 +91,9 @@ def init_db():
             conn.execute("ALTER TABLE dramas ADD COLUMN trim_checked INTEGER NOT NULL DEFAULT 0")
         if "trim_enabled" not in cols:
             conn.execute("ALTER TABLE dramas ADD COLUMN trim_enabled INTEGER NOT NULL DEFAULT 1")
+        # 老库迁移：最近播放时间（播放进度回写时刷新，列表"最近播放"排序用）
+        if "last_played_at" not in cols:
+            conn.execute("ALTER TABLE dramas ADD COLUMN last_played_at INTEGER NOT NULL DEFAULT 0")
 
 
 @contextmanager

@@ -124,6 +124,7 @@ def list_dramas(
         where.append(state_sql)
     order = {
         "updated": "updated_date DESC, id DESC",
+        "played": "last_played_at DESC, id DESC",
         "size": "size_mb DESC",
         "title": "title",
         "episodes": "episodes_expected DESC",
@@ -281,6 +282,9 @@ def patch_drama(drama_id: int, body: WatchPatch):
     if body.last_episode is not None:
         sets.append("last_episode=?")
         args.append(body.last_episode)
+    if body.last_episode is not None or body.watch_state is not None:
+        # 播放行为（进度/状态回写）刷新最近播放时间，"最近播放"排序依据
+        sets.append("last_played_at=strftime('%s','now')")
     if body.favorite is not None:
         sets.append("favorite=?")
         args.append(1 if body.favorite else 0)
