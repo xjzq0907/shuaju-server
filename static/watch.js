@@ -510,8 +510,24 @@
   video.addEventListener("pause", () => { $("play-btn").textContent = "▶"; showHud(true); });
   video.addEventListener("waiting", () => $("spinner").classList.remove("hidden"));
   ["playing", "canplay"].forEach((ev) => video.addEventListener(ev, () => $("spinner").classList.add("hidden")));
+  video.addEventListener("timeupdate", () => { if (displayCur() > 2) stallRetries = 0; });
+  let stallRetries = 0;
   video.addEventListener("ended", () => {
     if (!drama) return;
+    // 转码流中途断流也会触发 ended：不到片尾不切集，原地重开流（防黑屏跳集）
+    const cur = displayCur();
+    const dur = displayDur();
+    if (dur > 0 && cur < dur - 1500) {
+      if (++stallRetries > 3) {
+        stallRetries = 0;
+        toast('转码多次中断，建议切回原画', 3000);
+        return;
+      }
+      toast('转码中断，重连中…', 1600);
+      reopenAt(Math.max(0, cur - 0.5));
+      return;
+    }
+    stallRetries = 0;
     savePos(drama.id, curEp, 0);
     const eps = epsSorted();
     const i = eps.indexOf(curEp);

@@ -45,7 +45,8 @@ def _envelope(path: str, start: float, dur: float) -> tuple[float, list[float]]:
         "-i", path,
         "-vn", "-ac", "1", "-ar", str(AR), "-f", "s16le", "-",
     ]
-    r = subprocess.run(cmd, capture_output=True, timeout=30)
+    r = subprocess.run(cmd, capture_output=True, timeout=30,
+                           preexec_fn=lambda: os.nice(15))  # 降优先级，别抢播放转码
     data = r.stdout
     n_samp = len(data) // 2
     samples = array.array("h", data[: n_samp * 2])
@@ -112,6 +113,7 @@ def _probe_duration(path: str) -> float:
             ["ffprobe", "-v", "error", "-show_entries", "format=duration",
              "-of", "csv=p=0", path],
             capture_output=True, timeout=10,
+            preexec_fn=lambda: os.nice(15),
         )
         return float(r.stdout.decode().strip())
     except Exception:  # noqa: BLE001

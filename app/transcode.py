@@ -10,6 +10,7 @@
 import logging
 import subprocess
 import threading
+import time
 
 log = logging.getLogger("transcode")
 
@@ -23,7 +24,11 @@ def stream(src: str, height: int, start: float = 0.0):
     """返回分片 MP4 字节流生成器；客户端断开时经 GeneratorExit/GC 关闭并杀掉 ffmpeg。"""
     def gen():
         proc = None
-        got = _sem.acquire(timeout=30)  # 排队等槽位；超时就直接转，宁可慢不拒绝
+        t_wait = time.time()
+    got = _sem.acquire(timeout=30)  # 排队等槽位；超时就直接转，宁可慢不拒绝
+    waited = time.time() - t_wait
+    if waited > 2:
+        log.info("转码排队等待 %.1f 秒（3 路并发已满）", waited)
         try:
             cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error"]
             if start > 0.05:
