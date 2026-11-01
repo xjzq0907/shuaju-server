@@ -63,6 +63,11 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL,
   updated_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS feedback (
+  key TEXT PRIMARY KEY,      -- 归一化剧名（_feed_key），同剧变体一并排除
+  created_at INTEGER NOT NULL
+);
 """
 
 

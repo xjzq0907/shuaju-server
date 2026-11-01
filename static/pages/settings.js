@@ -14,6 +14,15 @@ export function renderSettings() {
   loadAbout();
   loadConfig();
   loadTrim();
+  loadDislikes();
+  $("#dis-clear").onclick = async () => {
+    if (!confirm("清空全部「不想看」记录？这些剧会恢复出现在刷剧推荐里。")) return;
+    try {
+      const r = await api("/api/dislikes", { method: "DELETE" });
+      toast(`已清空 ${r.cleared} 条记录`);
+      loadDislikes();
+    } catch (e) { toast(e.message, true); }
+  };
   $("#cfg-save").onclick = saveConfig;
   $("#trim-reset-btn").onclick = async () => {
     if (!confirm("清空全部裁边分析结果，让后台线程全库重跑？（每部剧几秒，期间逐步出结果）")) return;
@@ -60,6 +69,13 @@ export function renderSettings() {
       toast(e.message, true);
     }
   };
+}
+
+async function loadDislikes() {
+  try {
+    const d = await api("/api/dislikes");
+    $("#dis-count").textContent = d.count ? `（已排除 ${d.count} 部）` : "";
+  } catch (_) {}
 }
 
 /** 扫码配置：把当前站点地址画成二维码（App 首启扫码自动填；兼容 nginx 子路径部署） */

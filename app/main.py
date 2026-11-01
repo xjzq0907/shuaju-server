@@ -164,10 +164,13 @@ def random_dramas(
             "SELECT * FROM dramas WHERE download_state='done' AND local_dir IS NOT NULL"
             " AND episodes_local > 0 ORDER BY id"
         ).fetchall()
-    # 同剧变体只留一部（优先未看的代表；服务端去重后客户端无需跨批过滤）
+        disliked = {r["key"] for r in c.execute("SELECT key FROM feedback")}
+    # 同剧变体只留一部（优先未看的代表；"不想看"按归一化剧名整组排除）
     groups: dict = {}
     for r in rows:
         k = _feed_key(r["title"])
+        if k in disliked:
+            continue
         g = groups.get(k)
         if g is None or (g["watch_state"] != "unwatched" and r["watch_state"] == "unwatched"):
             groups[k] = r
@@ -485,6 +488,36 @@ def qr_png(data: str = Query(..., max_length=300), scale: int = Query(8, ge=2, l
         + chunk(b"IEND", b"")
     )
     return Response(content=png, media_type="image/png")
+
+
+@app.post("/api/dramas/{drama_id}/dislike")
+def drama_dislike(drama_id: int):
+    """发现流"不想看"：按归一化剧名记入 feedback，random 端点排除该系列（含变体）。"""
+    with get_db() as c:
+        r = c.execute("SELECT title FROM dramas WHERE id=?", (drama_id,)).fetchone()
+        if not r:
+            raise HTTPException(404)
+        key = _feed_key(r["title"])
+        c.execute(
+            "INSERT OR IGNORE INTO feedback (key, created_at) VALUES (?, strftime('%s','now'))",
+            (key,),
+        )
+    return {"ok": True, "key": key}
+
+
+@app.get("/api/dislikes")
+def dislikes_list():
+    with get_db() as c:
+        n = c.execute("SELECT COUNT(*) FROM feedback").fetchone()[0]
+    return {"count": n}
+
+
+@app.delete("/api/dislikes")
+def dislikes_clear():
+    """清空"不想看"记录（全部恢复推荐）。"""
+    with get_db() as c:
+        n = c.execute("DELETE FROM feedback").rowcount
+    return {"cleared": n}
 
 
 @app.get("/api/about")
