@@ -1,5 +1,5 @@
 /* 短剧 PWA：首页（继续观看/筛选/无限滚动）+ 沉浸式播放器
-   （手势教学/长按2倍速/双击快进/进度记忆/倍速持久化/锁屏控制） */
+   （手势教学/长按3倍速/双击快进/进度记忆/倍速持久化/锁屏控制） */
 (() => {
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -10,7 +10,7 @@
   };
 
   /* ================= localStorage ================= */
-  const SPEEDS = [1, 1.25, 1.5, 2, 0.75];
+  const SPEEDS = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 0.75];
   let spIdx = 0;
   try { spIdx = Math.min(SPEEDS.length - 1, Math.max(0, parseInt(localStorage.getItem("dj_speed") || "0", 10) || 0)); } catch (e) {}
 
@@ -376,7 +376,8 @@
     lpTimer = setTimeout(() => {
       if (tStart && !moved) {
         boosted = true;
-        video.playbackRate = 2;
+        video.playbackRate = 3; // 长按默认 3 倍速
+        $("boost").textContent = "3倍速";
         $("boost").classList.remove("hidden");
       }
     }, 350);
