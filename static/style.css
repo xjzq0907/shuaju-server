@@ -326,7 +326,12 @@ button:disabled:hover { border-color: var(--border-2); color: var(--fg); }
 .tag.gray { background: var(--bg3); color: var(--muted); }
 
 /* ---- 表格 ---- */
-.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--card); }
+/* overflow-y 必须显式 clip：只写 overflow-x:auto 会被规范隐式算成 auto，
+   容器变成滚动层会让 sticky 表头相对容器偏移（永久下移 58px 盖住首行） */
+.table-wrap {
+  overflow-x: auto; overflow-y: clip;
+  border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--card);
+}
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td {
   padding: 8px 12px; text-align: left;
