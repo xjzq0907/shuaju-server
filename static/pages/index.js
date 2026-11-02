@@ -1,5 +1,5 @@
 /* 全库索引：搜索 + 入队 + 黑名单管理 */
-import { $, esc, api, post, toast } from "../shared.js";
+import { $, esc, api, post, toast, confirmBox, renderPager } from "../shared.js";
 
 const idxState = { page: 1, pageSize: 20, selected: new Set() };
 
@@ -25,6 +25,38 @@ export function renderIndex() {
     clearTimeout(t);
     t = setTimeout(() => { idxState.page = 1; idxState.selected.clear(); loadIndex(); }, 350);
   };
+
+  // 导入 Excel 索引（raw body 上传，服务端按 share_url 合并）
+  $("#idx-import-btn").onclick = () => $("#idx-import-file").click();
+  $("#idx-import-file").onchange = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const btn = $("#idx-import-btn");
+    const orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "导入中…";
+    try {
+      const res = await fetch(
+        `/api/index/import-xlsx?name=${encodeURIComponent(f.name)}`,
+        { method: "POST", body: f }
+      );
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.detail || `${res.status} ${res.statusText}`);
+      toast(
+        `Excel 导入完成：新增 ${j.inserted} · 更新 ${j.updated} · 拉黑跳过 ${j.skipped_blacklist} · 坏行 ${j.skipped_bad}`
+      );
+      idxState.page = 1;
+      idxState.selected.clear();
+      loadIndex();
+    } catch (err) {
+      toast("导入失败：" + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+      e.target.value = "";
+    }
+  };
+
   $("#idx-queue-selected").onclick = async () => {
     if (!idxState.selected.size) return toast("先勾选要下载的剧", true);
     const r = await post("/api/queue", { dramas: [...idxState.selected] });
@@ -69,7 +101,8 @@ async function loadIndex() {
     .join("");
   $("#idx-body").querySelectorAll("button[data-bl]").forEach((b) => {
     b.onclick = async () => {
-      if (!confirm("删除本地文件（如有）并将此链接加入黑名单？")) return;
+      const ok = await confirmBox("删除本地文件（如有）并将此链接加入黑名单？", { okText: "删除并拉黑" });
+      if (!ok) return;
       try {
         const r = await post(`/api/dramas/${b.dataset.bl}/blacklist`, { delete_files: true });
         toast(r.files_deleted ? `已删除并拉黑，释放 ${r.freed_mb} MB` : "已拉黑");
@@ -87,22 +120,10 @@ async function loadIndex() {
   });
 
   const pages = Math.max(1, Math.ceil(data.total / idxState.pageSize));
-  const pg = $("#idx-pager");
-  pg.innerHTML = "";
-  if (pages > 1) {
-    const prev = document.createElement("button");
-    prev.textContent = "上一页";
-    prev.disabled = idxState.page <= 1;
-    prev.onclick = () => { idxState.page--; loadIndex(); };
-    const next = document.createElement("button");
-    next.textContent = "下一页";
-    next.disabled = idxState.page >= pages;
-    next.onclick = () => { idxState.page++; loadIndex(); };
-    const label = document.createElement("span");
-    label.className = "muted";
-    label.textContent = `${idxState.page} / ${pages}`;
-    pg.append(prev, label, next);
-  }
+  renderPager($("#idx-pager"), idxState.page, pages, (p) => {
+    idxState.page = p;
+    loadIndex();
+  });
 }
 
 async function loadBlacklist() {

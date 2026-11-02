@@ -12,10 +12,12 @@ from fastapi import Body, FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 
 from . import config, pipeline, settings_store, sync, transcode, trim, util
 from .clients import Aria2Client
 from .db import get_db, init_db
+from .xlsx_index import XlsxError
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s][%(levelname)s] %(message)s")
 log = logging.getLogger("main")
@@ -590,6 +592,31 @@ def index_search(q: str = "", page: int = 1, page_size: int = Query(20, le=100))
             (f"%{q}%",),
         ).fetchone()[0]
     return {"total": total, "page": page, "items": [dict(r) for r in rows]}
+
+
+XLSX_MAX_BYTES = 32 * 1024 * 1024
+
+
+@app.post("/api/index/import-xlsx")
+async def index_import_xlsx(request: Request, name: str = Query("")):
+    """导入用户上传的短剧索引 Excel（raw body 上传，零新增依赖）。
+
+    前端 fetch(url, {method:'POST', body: file})；解析与入库在线程池执行避免阻塞事件循环。
+    """
+    body = await request.body()
+    if not body:
+        raise HTTPException(status_code=400, detail="空文件")
+    if len(body) > XLSX_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="文件超过 32MB 上限")
+    log.info("收到索引 Excel 导入: %s (%.1f MB)", name or "?", len(body) / 1048576)
+    try:
+        stats = await run_in_threadpool(sync.import_xlsx, body)
+    except XlsxError as e:
+        raise HTTPException(status_code=400, detail=f"Excel 解析失败：{e}")
+    except Exception:
+        log.exception("Excel 导入失败")
+        raise HTTPException(status_code=500, detail="导入失败，详见服务日志")
+    return stats
 
 
 # ---------- 队列 / 批次 ----------

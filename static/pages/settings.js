@@ -1,5 +1,5 @@
 /* 设置：关于 / 运行配置（数据库持久化）/ 手动同步 / 危险区 */
-import { $, api, post, put, toast } from "../shared.js";
+import { $, api, post, put, toast, confirmBox } from "../shared.js";
 
 const CFG_FIELDS = {
   LIB_ROOT: "#cfg-lib",
@@ -16,7 +16,7 @@ export function renderSettings() {
   loadTrim();
   loadDislikes();
   $("#dis-clear").onclick = async () => {
-    if (!confirm("清空全部「不想看」记录？这些剧会恢复出现在刷剧推荐里。")) return;
+    if (!(await confirmBox("清空全部「不想看」记录？这些剧会恢复出现在刷剧推荐里。", { okText: "清空" }))) return;
     try {
       const r = await api("/api/dislikes", { method: "DELETE" });
       toast(`已清空 ${r.cleared} 条记录`);
@@ -25,7 +25,7 @@ export function renderSettings() {
   };
   $("#cfg-save").onclick = saveConfig;
   $("#trim-reset-btn").onclick = async () => {
-    if (!confirm("清空全部裁边分析结果，让后台线程全库重跑？（每部剧几秒，期间逐步出结果）")) return;
+    if (!(await confirmBox("清空全部裁边分析结果，让后台线程全库重跑？（每部剧几秒，期间逐步出结果）", { okText: "重新检测" }))) return;
     try {
       const r = await api("/api/trim/reset", { method: "POST" });
       toast(`已重置 ${r.reset} 部，后台将逐步重新分析`);
@@ -33,7 +33,7 @@ export function renderSettings() {
     } catch (e) { toast(e.message, true); }
   };
   $("#cfg-reset").onclick = async () => {
-    if (!confirm("清空所有页面配置，恢复 .env 环境默认值？")) return;
+    if (!(await confirmBox("清空所有页面配置，恢复 .env 环境默认值？", { okText: "恢复默认" }))) return;
     try {
       await api("/api/settings", { method: "DELETE" });
       toast("已恢复环境默认");
@@ -57,7 +57,7 @@ export function renderSettings() {
     };
   });
   $("#clear-queue-btn").onclick = async () => {
-    if (!confirm("清空所有等待中的下载队列项？")) return;
+    if (!(await confirmBox("清空所有等待中的下载队列项？", { okText: "清空队列" }))) return;
     try {
       const q = await api("/api/queue");
       let n = 0;
@@ -130,7 +130,7 @@ async function loadAbout() {
     const dep = $("#set-deploy");
     if (dep) {
       dep.innerHTML = `<span class="k">部署路径</span>
-        <span style="word-break:break-all;font-size:11px">索引 ${a.quark_links_dir} · 数据 ${a.data_dir}</span>`;
+        <span class="break-all">索引 ${a.quark_links_dir} · 数据 ${a.data_dir}</span>`;
     }
   } catch (e) {
     $("#set-version").textContent = "获取失败";

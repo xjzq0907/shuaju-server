@@ -1,5 +1,5 @@
 /* 剧库：无限滚动卡片墙 + 多选批量操作 + 右侧详情抽屉 */
-import { $, esc, api, post, patch, toast, fmtGB } from "../shared.js";
+import { $, esc, api, post, patch, toast, fmtGB, confirmBox, openDrawer, closeDrawer } from "../shared.js";
 
 const PAGE_SIZE = 24;
 const st = { page: 1, total: 0, loading: false, selectMode: false, selected: new Set() };
@@ -163,7 +163,8 @@ async function batchWatch() {
 async function batchBlacklist() {
   if (!st.selected.size) return toast("先勾选要拉黑的剧", true);
   const n = st.selected.size;
-  if (!confirm(`将拉黑所选 ${n} 部（保留本地文件，同步不会复活）。确定？`)) return;
+  const ok = await confirmBox(`将拉黑所选 ${n} 部（保留本地文件，同步不会复活）。确定？`, { okText: "拉黑" });
+  if (!ok) return;
   for (const id of st.selected) {
     try { await post(`/api/dramas/${id}/blacklist`, { delete_files: false }); } catch {}
   }
@@ -172,20 +173,11 @@ async function batchBlacklist() {
   resetAndLoad();
 }
 
-/* ---- 详情抽屉 ---- */
-
-function openDrawer() {
-  $("#drawer").classList.add("open");
-  $("#drawer-mask").classList.add("open");
-}
-export function closeDrawer() {
-  $("#drawer").classList.remove("open");
-  $("#drawer-mask").classList.remove("open");
-}
+/* ---- 详情抽屉（开合逻辑在 shared.js） ---- */
 
 async function openDetail(id) {
   const box = $("#drawer-content");
-  box.innerHTML = '<div class="muted" style="padding:20px">加载中…</div>';
+  box.innerHTML = '<div class="muted p20">加载中…</div>';
   openDrawer();
   let d;
   try {
@@ -213,7 +205,7 @@ async function openDetail(id) {
   ops.push(`<button data-act="rescan">🔄 重扫此剧（刷新集数/大小）</button>`);
   if (d.share_url) ops.push(`<button data-act="copy">🔗 复制分享链接</button>`);
   ops.push(`<div class="row">
-    <select id="d-watch" style="flex:1">
+    <select id="d-watch">
       <option value="">观看状态…</option>
       <option value="unwatched" ${d.watch_state === "unwatched" ? "selected" : ""}>未看</option>
       <option value="watching" ${d.watch_state === "watching" ? "selected" : ""}>在看</option>
@@ -231,14 +223,14 @@ async function openDetail(id) {
       <span class="k">更新</span><span>${d.updated_date || "-"}</span>
       <span class="k">网盘</span><span class="tag ${d.drive_state === "dead" ? "err" : d.drive_state === "saved" ? "ok" : "gray"}">${d.drive_state || "-"}</span>
       <span class="k">下载</span><span>${d.download_state}</span>
-      ${urlPath ? `<span class="k">目录</span><span style="word-break:break-all;font-size:12px">${esc(urlPath)}</span>` : ""}
+      ${urlPath ? `<span class="k">目录</span><span class="break-all">${esc(urlPath)}</span>` : ""}
     </div>
     <div class="d-ops">${ops.join("")}</div>
     <div class="d-eps">
       ${d.episodes.length ? `<div class="ep-grid">${d.episodes
         .map((e) => `<button data-ep="${e.ep}" title="${esc(e.file)} · ${e.size_mb}MB">${e.ep}</button>`)
         .join("")}</div>` : '<p class="muted">未下载</p>'}
-      ${d.missing.length ? `<p class="muted" style="margin-top:8px;font-size:12px">缺集：${d.missing.join("、")}</p>` : ""}
+      ${d.missing.length ? `<p class="muted small mt8">缺集：${d.missing.join("、")}</p>` : ""}
     </div>`;
 
   $("#d-watch").onchange = async (e) => {
@@ -277,13 +269,15 @@ async function drawerAction(act, d, btn) {
       await navigator.clipboard.writeText(d.share_url);
       toast("分享链接已复制");
     } else if (act === "remove") {
-      if (!confirm("移出剧库并拉黑此链接（保留本地文件，同步不会复活）？")) return;
+      const ok = await confirmBox("移出剧库并拉黑此链接（保留本地文件，同步不会复活）？", { okText: "移出并拉黑" });
+      if (!ok) return;
       await post(`/api/dramas/${d.id}/blacklist`, { delete_files: false });
       toast("已移出，链接已拉黑（文件保留在磁盘）");
       closeDrawer();
       resetAndLoad();
     } else if (act === "blacklist") {
-      if (!confirm(`将删除本地 ${d.episodes.length} 集（${fmtGB(d.size_mb || 0)}）并拉黑。文件不可恢复！确定？`)) return;
+      const ok = await confirmBox(`将删除本地 ${d.episodes.length} 集（${fmtGB(d.size_mb || 0)}）并拉黑。文件不可恢复！确定？`, { okText: "删除并拉黑" });
+      if (!ok) return;
       const r = await post(`/api/dramas/${d.id}/blacklist`, { delete_files: true });
       toast(r.files_deleted ? `已删除并拉黑，释放 ${fmtGB(r.freed_mb)}` : "已拉黑");
       closeDrawer();
@@ -293,6 +287,3 @@ async function drawerAction(act, d, btn) {
     toast(e.message, true);
   }
 }
-
-$("#drawer-close").onclick = closeDrawer;
-$("#drawer-mask").onclick = closeDrawer;

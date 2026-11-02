@@ -7,6 +7,7 @@ import time
 from . import config
 from .db import get_db
 from .util import expected_episodes, folder_stats
+from .xlsx_index import XlsxError, parse_xlsx_index
 
 log = logging.getLogger("sync")
 
@@ -47,6 +48,67 @@ def import_csv():
         )
     log.info("CSV 导入 %d 条", len(rows))
     return len(rows)
+
+
+def import_xlsx(data: bytes) -> dict:
+    """导入用户上传的短剧索引 Excel（按 share_url upsert，语义与 import_csv 一致）。
+
+    只增改不删：命中黑名单跳过；只覆盖 title/episodes_expected/updated_date/updated_at，
+    不触碰 download_state/drive_state/local_dir 等状态列。返回分项统计。
+    """
+    now = int(time.time())
+    with get_db() as conn:
+        bl_urls = {
+            r["share_url"]
+            for r in conn.execute("SELECT share_url FROM blacklist WHERE share_url IS NOT NULL")
+        }
+
+    rows = []
+    stats = {"inserted": 0, "updated": 0, "skipped_blacklist": 0, "skipped_bad": 0, "total": 0}
+    for title, url, date in parse_xlsx_index(data):
+        stats["total"] += 1
+        if not title or not url.startswith("http"):
+            stats["skipped_bad"] += 1
+            continue
+        url = url.strip()
+        if url in bl_urls:
+            stats["skipped_blacklist"] += 1
+            continue
+        rows.append((title, expected_episodes(title), date, url, now, now))
+
+    # 区分新增/更新（仅用于统计，最终仍走同一条 upsert）
+    with get_db() as conn:
+        existing = set()
+        for i in range(0, len(rows), 500):
+            chunk = rows[i : i + 500]
+            marks = ",".join("?" * len(chunk))
+            existing |= {
+                r[0]
+                for r in conn.execute(
+                    f"SELECT share_url FROM dramas WHERE share_url IN ({marks})",
+                    [r[3] for r in chunk],
+                )
+            }
+        stats["inserted"] = sum(1 for r in rows if r[3] not in existing)
+        stats["updated"] = len(rows) - stats["inserted"]
+        conn.executemany(
+            """
+            INSERT INTO dramas (title, episodes_expected, updated_date, share_url, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(share_url) DO UPDATE SET
+              title=excluded.title,
+              episodes_expected=excluded.episodes_expected,
+              updated_date=excluded.updated_date,
+              updated_at=excluded.updated_at
+            """,
+            rows,
+        )
+    log.info(
+        "Excel 导入 完成: 新增 %d · 更新 %d · 拉黑跳过 %d · 坏行 %d (总 %d)",
+        stats["inserted"], stats["updated"],
+        stats["skipped_blacklist"], stats["skipped_bad"], stats["total"],
+    )
+    return stats
 
 
 def mirror_state():

@@ -52,6 +52,9 @@ def update_state_json(entries: dict):
     tmp = config.STATE_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=1)
+    # 多写者共享（quark-auto-save root / 服务包用户 / zcode CLI）：固定 666，避免
+    # umask 把替换后的文件收成 644 导致其他身份无法再写
+    os.chmod(tmp, 0o666)
     os.replace(tmp, config.STATE_PATH)
 
 

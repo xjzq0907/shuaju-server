@@ -1,5 +1,8 @@
 /* 仪表盘：统计卡 / 流水线状态 / 最近批次 / 全局搜索 */
-import { $, esc, api, post, fmtGB, toast } from "../shared.js";
+import {
+  $, esc, api, fmtGB, delegate,
+  renderBatchItems, bindBatchToggle, togglePipelinePause,
+} from "../shared.js";
 
 let timer = null;
 let statsAnimated = false; // 数字滚动/进度条生长只在首次渲染播放
@@ -20,11 +23,22 @@ export function renderDashboard() {
   loadBatches();
   timer = setInterval(() => { loadStats(); loadPipeline(); }, 15000);
 
-  $("#dash-pause-btn").onclick = async () => {
-    const cur = $("#dash-pause-btn").textContent.includes("暂停");
-    await post("/api/pipeline/pause", { paused: cur });
-    loadPipeline();
-  };
+  $("#dash-pause-btn").onclick = () => togglePipelinePause($("#dash-pause-btn"), loadPipeline);
+
+  // 最近批次与搜索结果：委托只绑一次（容器持久，重复绑定会累积）
+  bindBatchToggle($("#dash-batches"), "dash-blog");
+  if (!window._gsBound) {
+    window._gsBound = true;
+    const box = $("#gs-results");
+    delegate(box, "click", "[data-lib]", (e, el) => {
+      window.__pendingDetail = +el.dataset.lib;
+      location.hash = "#/library";
+    });
+    delegate(box, "click", "[data-idx]", () => {
+      location.hash = "#/index";
+      sessionStorage.setItem("idx_q", $("#gs-input").value.trim());
+    });
+  }
 
   const input = $("#gs-input");
   let t = null;
@@ -103,28 +117,9 @@ async function loadBatches() {
   try {
     const b = await api("/api/batches?page_size=5");
     const el = $("#dash-batches");
-    if (!b.items.length) { el.innerHTML = '<span class="muted">暂无批次记录</span>'; return; }
-    el.innerHTML = b.items
-      .map(
-        (x) => `<div class="batch-item"><div class="head" data-bid="${x.id}">
-          <span class="tag ${x.status === "done" ? "ok" : x.status === "running" ? "info" : "err"}">#${x.id} ${x.status}</span>
-          <span class="muted" style="font-size:12px">${new Date(x.created_at * 1000).toLocaleString("zh-CN")}</span>
-          <span style="font-size:12px">共 ${x.total} · 转存 ${x.saved} · 失效 ${x.dead} · 失败 ${x.failed}</span>
-        </div><div class="batch-log hidden" id="dash-blog-${x.id}"></div></div>`
-      )
-      .join("");
-    el.querySelectorAll(".head").forEach((h) => {
-      h.onclick = async () => {
-        const box = $("#dash-blog-" + h.dataset.bid);
-        if (box.classList.contains("hidden")) {
-          if (!box.textContent) {
-            const bd = await api(`/api/batches/${h.dataset.bid}`);
-            box.textContent = bd.log_lines.join("\n");
-          }
-          box.classList.remove("hidden");
-        } else box.classList.add("hidden");
-      };
-    });
+    el.innerHTML = b.items.length
+      ? renderBatchItems(b.items, "dash-blog")
+      : '<span class="muted">暂无批次记录</span>';
   } catch {}
 }
 
@@ -138,7 +133,7 @@ function showDash() {
 async function doSearch(q) {
   if (!q) { showDash(); return; }
   const box = $("#gs-results");
-  box.innerHTML = '<div class="muted" style="padding:10px">搜索中…</div>';
+  box.innerHTML = '<div class="muted p10">搜索中…</div>';
   box.classList.remove("hidden");
   $("#dash-main").classList.add("hidden");
   try {
@@ -156,7 +151,7 @@ async function doSearch(q) {
               ${d.has_cover ? "" : '<span class="tag gray">无封面</span>'}</div>`
           )
           .join("")
-      : '<div class="muted" style="padding:4px 8px;font-size:13px">本地没有，试试下面的索引结果直接入队下载</div>';
+      : '<div class="muted p48">本地没有，试试下面的索引结果直接入队下载</div>';
     html += "</div>";
     html += `<div class="gs-group"><h3>全库索引（${idx.total}）</h3>`;
     html += idx.items.length
@@ -168,16 +163,11 @@ async function doSearch(q) {
               ${d.download_state === "queued" ? '<span class="tag info">队列中</span>' : ""}</div>`
           )
           .join("")
-      : '<div class="muted" style="padding:4px 8px;font-size:13px">索引里也没有</div>';
+      : '<div class="muted p48">索引里也没有</div>';
     html += "</div>";
     box.innerHTML = html;
-    box.querySelectorAll("[data-lib]").forEach((el) => {
-      el.onclick = () => { window.__pendingDetail = +el.dataset.lib; location.hash = "#/library"; };
-    });
-    box.querySelectorAll("[data-idx]").forEach((el) => {
-      el.onclick = () => { location.hash = "#/index"; sessionStorage.setItem("idx_q", q); };
-    });
+    // 点击行为由 renderDashboard 中的一次性委托处理
   } catch (e) {
-    box.innerHTML = `<div class="muted" style="padding:10px">搜索失败：${esc(e.message)}</div>`;
+    box.innerHTML = `<div class="muted p10">搜索失败：${esc(e.message)}</div>`;
   }
 }

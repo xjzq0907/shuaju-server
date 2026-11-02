@@ -49,6 +49,22 @@ export async function renderWatch([id, ep]) {
         localStorage.setItem(`dj-pos-${watch.id}-${watch.cur}`, Math.floor(video.currentTime));
       }
     });
+
+    // 播放框方向：默认竖屏（短剧为竖屏内容）；横屏片源自动切宽屏，手动切换后记住选择
+    let userOrient = localStorage.getItem("dj-watch-orient") || "";
+    const applyOrient = () => {
+      const horizontal = video.videoWidth > 0 && video.videoWidth > video.videoHeight;
+      const wide = userOrient ? userOrient === "l" : horizontal;
+      video.classList.toggle("wide", wide);
+      $("#orient-btn").textContent = wide ? "⛶ 横屏" : "⊟ 竖屏";
+    };
+    video.addEventListener("loadedmetadata", applyOrient);
+    $("#orient-btn").onclick = () => {
+      userOrient = video.classList.contains("wide") ? "p" : "l";
+      localStorage.setItem("dj-watch-orient", userOrient);
+      applyOrient();
+    };
+    applyOrient();
   }
   playEpisode(target);
 }
@@ -84,3 +100,12 @@ function playEpisode(ep) {
 }
 
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+/** 离开播放页：停播并释放，避免后台继续出声 */
+export function cleanupWatch() {
+  const v = document.querySelector("#player");
+  if (!v) return;
+  v.pause();
+  v.removeAttribute("src");
+  v.load();
+}
