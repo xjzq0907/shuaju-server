@@ -14,13 +14,18 @@ import time
 
 log = logging.getLogger("transcode")
 
-# 清晰度定义：参数值 → 输出高度；客户端用不到的键不要加
-QUALITIES = {"720p": 720, "480p": 480}
+# 清晰度定义：参数值 → (输出高度, crf, 音频码率)；客户端用不到的键不要加
+# 360P 是省流档：crf26 + 64k 音频，约原片 1/5 体积（短剧内嵌字幕仍可读）
+QUALITIES = {
+    "720p": {"h": 720, "crf": 24, "ab": "96k"},
+    "480p": {"h": 480, "crf": 24, "ab": "96k"},
+    "360p": {"h": 360, "crf": 26, "ab": "64k"},
+}
 
 _sem = threading.Semaphore(3)
 
 
-def stream(src: str, height: int, start: float = 0.0):
+def stream(src: str, qdef: dict, start: float = 0.0):
     """返回分片 MP4 字节流生成器；客户端断开时经 GeneratorExit/GC 关闭并杀掉 ffmpeg。"""
     def gen():
         proc = None
@@ -36,11 +41,11 @@ def stream(src: str, height: int, start: float = 0.0):
                 cmd += ["-ss", f"{start:.2f}"]
             cmd += [
                 "-i", src,
-                "-vf", f"scale=-2:{height}",
-                "-c:v", "libx264", "-preset", "veryfast", "-crf", "24",
+                "-vf", f"scale=-2:{qdef['h']}",
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", str(qdef["crf"]),
                 "-g", "48",              # ~2s 一个关键帧，分片小、拖动粒度细
                 "-threads", "4",
-                "-c:a", "aac", "-b:a", "96k",
+                "-c:a", "aac", "-b:a", qdef["ab"],
                 "-movflags", "frag_keyframe+empty_moov+default_base_moof",
                 "-f", "mp4", "-",
             ]

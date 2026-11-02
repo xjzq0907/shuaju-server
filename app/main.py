@@ -359,10 +359,10 @@ def play_episode(drama_id: int, ep: int, request: Request, q: str = "", t: float
     if not r:
         raise HTTPException(404)
     src = _episode_path(dict(r), ep)
-    height = transcode.QUALITIES.get(q)
-    if height:
+    qdef = transcode.QUALITIES.get(q)
+    if qdef:
         return StreamingResponse(
-            transcode.stream(src, height, max(0.0, t)),
+            transcode.stream(src, qdef, max(0.0, t)),
             media_type="video/mp4",
             # 转码流不可拖动寻址（Seek 靠客户端换 t 重开流）
             headers={"Accept-Ranges": "none", "Cache-Control": "no-store"},

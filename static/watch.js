@@ -16,8 +16,8 @@
 
   /* 清晰度：null=原画直读；否则服务端 ffmpeg 实时转码（?q=xxx&t=起点秒）。
      转码流时间轴从 0 起算，显示时间 = t 偏移 + 播放器时间；深跳换新 t 重开流。 */
-  const QUALS = [null, "720p", "480p"];
-  const Q_LABELS = ["原画", "720P", "480P"];
+  const QUALS = [null, "720p", "480p", "360p"];
+  const Q_LABELS = ["原画", "720P", "480P", "360P"];
   let qIdx = 0;
   try { qIdx = Math.min(QUALS.length - 1, Math.max(0, parseInt(localStorage.getItem("dj_quality") || "0", 10) || 0)); } catch (e) {}
   let qOff = 0;
