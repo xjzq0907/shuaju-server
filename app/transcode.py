@@ -25,10 +25,10 @@ def stream(src: str, height: int, start: float = 0.0):
     def gen():
         proc = None
         t_wait = time.time()
-    got = _sem.acquire(timeout=30)  # 排队等槽位；超时就直接转，宁可慢不拒绝
-    waited = time.time() - t_wait
-    if waited > 2:
-        log.info("转码排队等待 %.1f 秒（3 路并发已满）", waited)
+        got = _sem.acquire(timeout=30)  # 排队等槽位；超时就直接转，宁可慢不拒绝
+        waited = time.time() - t_wait
+        if waited > 2:
+            log.info("转码排队等待 %.1f 秒（3 路并发已满）", waited)
         try:
             cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error"]
             if start > 0.05:
