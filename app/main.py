@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import random
@@ -92,6 +93,104 @@ def stats():
         data["disk_free_gb"] = None
         data["disk_total_gb"] = None
     return data
+
+
+# ---------- 埋点（FR-FUT-01）：数据只进本库，永不出用户环境（NFR-07） ----------
+
+_EV_NAME = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
+_EV_MAX_BATCH = 100  # 单批上限（客户端单次最多 50）
+_EV_MAX_PROPS = 1024  # props 序列化后字节上限
+
+
+class EventItem(BaseModel):
+    name: str
+    ts: int
+    props: dict | None = None
+
+
+class EventsBody(BaseModel):
+    device: str
+    events: list[EventItem]
+
+
+@app.post("/api/events")
+def post_events(body: EventsBody):
+    """客户端批量上报（本地聚合后 flush）。宽松校验：坏条目跳过不整批拒。"""
+    device = body.device.strip()[:64]
+    if not device:
+        raise HTTPException(422, "device 为空")
+    now = int(time.time() * 1000)
+    rows = []
+    for e in body.events[:_EV_MAX_BATCH]:
+        if not _EV_NAME.match(e.name or ""):
+            continue
+        # 时钟漂移容忍 5 分钟：未来时间一律替换为服务端时间
+        ts = e.ts if 0 < e.ts < now + 300_000 else now
+        props = None
+        if e.props:
+            s = json.dumps(e.props, ensure_ascii=False, default=str)
+            if len(s.encode("utf-8")) <= _EV_MAX_PROPS:
+                props = s
+        rows.append((device, e.name, ts, props, now))
+    if not rows:
+        raise HTTPException(422, "无有效事件")
+    with get_db() as c:
+        c.executemany(
+            "INSERT INTO events (device, name, ts, props, received_at) VALUES (?,?,?,?,?)",
+            rows,
+        )
+    return {"accepted": len(rows)}
+
+
+@app.get("/api/events/stats")
+def events_stats(days: int = Query(7, ge=1, le=90)):
+    """近 N 天事件统计：按事件名总量、按天分布、活跃设备——仪表盘最简看板。"""
+    since = int(time.time() * 1000) - days * 86_400_000
+    with get_db() as c:
+        totals = {
+            r["name"]: r["n"]
+            for r in c.execute(
+                "SELECT name, COUNT(*) n FROM events WHERE ts>=? GROUP BY name",
+                (since,),
+            )
+        }
+        by_day = {}
+        for r in c.execute(
+            """SELECT date(ts/1000,'unixepoch','localtime') d, name, COUNT(*) n
+               FROM events WHERE ts>=? GROUP BY d, name""",
+            (since,),
+        ):
+            by_day.setdefault(r["d"], {})[r["name"]] = r["n"]
+        devices_by_day = {
+            r["d"]: r["n"]
+            for r in c.execute(
+                """SELECT date(ts/1000,'unixepoch','localtime') d,
+                          COUNT(DISTINCT device) n
+                   FROM events WHERE ts>=? GROUP BY d""",
+                (since,),
+            )
+        }
+        devices = c.execute(
+            "SELECT COUNT(DISTINCT device) FROM events WHERE ts>=?", (since,)
+        ).fetchone()[0]
+        total_all = c.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+        try:
+            play_seconds = c.execute(
+                """SELECT COALESCE(SUM(CAST(json_extract(props,'$.seconds') AS INTEGER)),0)
+                   FROM events WHERE name='play_time' AND ts>=?""",
+                (since,),
+            ).fetchone()[0]
+        except Exception:  # JSON1 不可用时降级为 0
+            play_seconds = 0
+    return {
+        "days": days,
+        "totals": totals,
+        "by_day": by_day,
+        "devices_by_day": devices_by_day,
+        "devices": devices,
+        "events_total": total_all,
+        "play_seconds": play_seconds,
+    }
 
 
 @app.get("/api/dramas")

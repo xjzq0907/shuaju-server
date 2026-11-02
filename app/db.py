@@ -68,6 +68,17 @@ CREATE TABLE IF NOT EXISTS feedback (
   key TEXT PRIMARY KEY,      -- 归一化剧名（_feed_key），同剧变体一并排除
   created_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS events (
+  id INTEGER PRIMARY KEY,
+  device TEXT NOT NULL,      -- 匿名设备号（客户端随机生成，不含用户信息）
+  name TEXT NOT NULL,        -- 事件名（app_open/feed_show/play_time/...）
+  ts INTEGER NOT NULL,       -- 客户端发生时间（ms）
+  props TEXT,                -- 附加属性 JSON（可空）
+  received_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_events_name_ts ON events(name, ts);
+CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);
 """
 
 

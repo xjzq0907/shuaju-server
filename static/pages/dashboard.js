@@ -21,7 +21,8 @@ export function renderDashboard() {
   loadStats();
   loadPipeline();
   loadBatches();
-  timer = setInterval(() => { loadStats(); loadPipeline(); }, 15000);
+  loadEvents();
+  timer = setInterval(() => { loadStats(); loadPipeline(); loadEvents(); }, 15000);
 
   $("#dash-pause-btn").onclick = () => togglePipelinePause($("#dash-pause-btn"), loadPipeline);
 
@@ -121,6 +122,33 @@ async function loadBatches() {
       ? renderBatchItems(b.items, "dash-blog")
       : '<span class="muted">暂无批次记录</span>';
   } catch {}
+}
+
+/** 埋点看板（FR-FUT-01）：近 7 天事件计数；旧服务端无此接口时静默 */
+async function loadEvents() {
+  try {
+    const s = await api("/api/events/stats?days=7");
+    const t = s.totals || {};
+    const chips = [
+      ["app_open", "启动"],
+      ["feed_show", "刷到"],
+      ["feed_open_full", "看完整版"],
+      ["feed_dislike", "不想看"],
+      ["player_enter", "进播放器"],
+      ["player_resume", "断点恢复"],
+      ["play_time", "时长上报"],
+    ]
+      .map(([k, label]) => `<span class="tag info">${label} ${t[k] || 0}</span>`)
+      .join("");
+    const mins = Math.round((s.play_seconds || 0) / 60);
+    $("#dash-events").innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+        <span class="tag ok">活跃设备 ${s.devices || 0}</span>${chips}
+        <span class="muted">累计播放 ${mins} 分钟 · 共 ${s.events_total || 0} 条</span>
+      </div>`;
+  } catch {
+    /* 旧服务端无 /api/events/stats：保持占位文本 */
+  }
 }
 
 /* ---- 全局搜索：本地库 + 全库索引 ---- */
